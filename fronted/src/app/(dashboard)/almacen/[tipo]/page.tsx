@@ -11,8 +11,8 @@ const nameMapping: Record<string, string> = {
   "materia-prima": "Materia Prima",
   "productos-terminados": "Productos Terminados",
   "productos-secos": "Productos Secos",
-  "envases": "Envases",
-  "quimicos": "Químicos"
+  "envases": "Almacén de Envases y Suministros",
+  "quimicos": "Almacén Químicos y Suministro"
 };
 
 export default function AlmacenPage({ params }: { params: Promise<{ tipo: string }> }) {
@@ -25,6 +25,7 @@ export default function AlmacenPage({ params }: { params: Promise<{ tipo: string
   const [formData, setFormData] = useState({
     description: "",
     category: "",
+    unit: "KG",
     unitPrice: "",
     minStock: ""
   });
@@ -40,7 +41,7 @@ export default function AlmacenPage({ params }: { params: Promise<{ tipo: string
   
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [productToEdit, setProductToEdit] = useState<any>(null);
-  const [editFormData, setEditFormData] = useState({ description: "", category: "", unitPrice: "", minStock: "" });
+  const [editFormData, setEditFormData] = useState({ description: "", category: "", unit: "KG", unitPrice: "", minStock: "" });
   const [editLots, setEditLots] = useState<any[]>([]);
   const [editCurrentLot, setEditCurrentLot] = useState({ lotCode: "", expirationDate: "", quantity: "" });
   const [isUpdating, setIsUpdating] = useState(false);
@@ -109,6 +110,7 @@ export default function AlmacenPage({ params }: { params: Promise<{ tipo: string
           warehouseName: realName,
           description: formData.description,
           category: formData.category,
+          unit: formData.unit,
           unitPrice: formData.unitPrice,
           minStock: formData.minStock,
           lots: lots
@@ -117,7 +119,7 @@ export default function AlmacenPage({ params }: { params: Promise<{ tipo: string
 
       if (res.ok) {
         setIsModalOpen(false);
-        setFormData({ description: "", category: "", unitPrice: "", minStock: "" });
+        setFormData({ description: "", category: "", unit: "KG", unitPrice: "", minStock: "" });
         setLots([]);
         setCurrentLot({ lotCode: "", expirationDate: "", quantity: "" });
         fetchProducts(); // Recargar la tabla
@@ -143,6 +145,7 @@ export default function AlmacenPage({ params }: { params: Promise<{ tipo: string
         body: JSON.stringify({
           description: editFormData.description,
           category: editFormData.category,
+          unit: editFormData.unit,
           unitPrice: editFormData.unitPrice,
           minStock: editFormData.minStock,
           lots: editLots
@@ -207,6 +210,7 @@ export default function AlmacenPage({ params }: { params: Promise<{ tipo: string
     setEditFormData({
       description: prod.description,
       category: prod.category,
+      unit: prod.unit || "KG",
       unitPrice: prod.unitPrice,
       minStock: prod.minStock !== undefined ? String(prod.minStock) : "0"
     });
@@ -406,8 +410,8 @@ export default function AlmacenPage({ params }: { params: Promise<{ tipo: string
                 />
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
-                <div className="col-span-1">
+              <div className="grid grid-cols-2 gap-5">
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Categoría *</label>
                   <input 
                     required
@@ -418,7 +422,21 @@ export default function AlmacenPage({ params }: { params: Promise<{ tipo: string
                     placeholder="Ej: Embutidos"
                   />
                 </div>
-                <div className="col-span-1">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Unidad *</label>
+                  <select
+                    required
+                    value={formData.unit}
+                    onChange={(e) => setFormData({...formData, unit: e.target.value})}
+                    className="w-full border border-gray-300 rounded-lg px-4 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-carey-red focus:border-transparent transition-all bg-white"
+                  >
+                    <option value="KG">KG</option>
+                    <option value="ML">ML</option>
+                    <option value="UND">UND</option>
+                    <option value="L">L</option>
+                  </select>
+                </div>
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Precio Unitario (S/)</label>
                   <input 
                     required
@@ -431,7 +449,7 @@ export default function AlmacenPage({ params }: { params: Promise<{ tipo: string
                     placeholder="Ej: 15.50"
                   />
                 </div>
-                <div className="col-span-1">
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Stock Seguridad</label>
                   <input 
                     required
@@ -654,8 +672,8 @@ export default function AlmacenPage({ params }: { params: Promise<{ tipo: string
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
-                <div className="col-span-1">
+              <div className="grid grid-cols-2 gap-5">
+                <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1">Categoría *</label>
                   <input 
                     required
@@ -665,7 +683,21 @@ export default function AlmacenPage({ params }: { params: Promise<{ tipo: string
                     className="w-full border border-gray-300 rounded-lg px-4 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#111827] focus:border-transparent transition-all"
                   />
                 </div>
-                <div className="col-span-1">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Unidad *</label>
+                  <select
+                    required
+                    value={editFormData.unit}
+                    onChange={(e) => setEditFormData({...editFormData, unit: e.target.value})}
+                    className="w-full border border-gray-300 rounded-lg px-4 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#111827] focus:border-transparent transition-all bg-white"
+                  >
+                    <option value="KG">KG</option>
+                    <option value="ML">ML</option>
+                    <option value="UND">UND</option>
+                    <option value="L">L</option>
+                  </select>
+                </div>
+                <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1">Precio (S/) *</label>
                   <input 
                     required
@@ -677,7 +709,7 @@ export default function AlmacenPage({ params }: { params: Promise<{ tipo: string
                     className="w-full border border-gray-300 rounded-lg px-4 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#111827] focus:border-transparent transition-all"
                   />
                 </div>
-                <div className="col-span-1">
+                <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1">Stock Seguro</label>
                   <input 
                     required

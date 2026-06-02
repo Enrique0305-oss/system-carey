@@ -23,7 +23,7 @@ const getProductos = async (req, res) => {
 };
 
 const createProducto = async (req, res) => {
-  const { warehouseName, description, category, unitPrice, lots, minStock } = req.body;
+  const { warehouseName, description, category, unitPrice, lots, minStock, unit } = req.body;
   
   try {
     const warehouse = await prisma.warehouse.findUnique({ where: { name: warehouseName } });
@@ -46,6 +46,7 @@ const createProducto = async (req, res) => {
         sku: newSku,
         description,
         category,
+        unit: unit || 'KG',
         unitPrice: parseFloat(unitPrice) || 0,
         minStock: parseFloat(minStock) || 0,
         lots: lots && lots.length > 0 ? {
@@ -69,7 +70,7 @@ const createProducto = async (req, res) => {
 
 const updateProducto = async (req, res) => {
   const { id } = req.params;
-  const { description, category, unitPrice, lots, status, minStock } = req.body;
+  const { description, category, unitPrice, lots, status, minStock, unit } = req.body;
   
   try {
     // 1. Actualizar Producto
@@ -78,6 +79,7 @@ const updateProducto = async (req, res) => {
       data: {
         description,
         category,
+        ...(unit && { unit }),
         unitPrice: parseFloat(unitPrice) || 0,
         ...(minStock !== undefined && { minStock: parseFloat(minStock) || 0 }),
         ...(status && { status })

@@ -38,8 +38,9 @@ export function Sidebar() {
     { name: "Materia Prima", path: "/almacen/materia-prima" },
     { name: "Productos Terminados", path: "/almacen/productos-terminados" },
     { name: "Productos Secos", path: "/almacen/productos-secos" },
-    { name: "Envases", path: "/almacen/envases" },
-    { name: "Químicos", path: "/almacen/quimicos" },
+    { name: "Almacén de Envases y Suministros", path: "/almacen/envases" },
+    { name: "Almacén Químicos y Suministro", path: "/almacen/quimicos" },
+    { name: "Producción Interna", path: "/almacen/produccion" },
   ];
 
   return (

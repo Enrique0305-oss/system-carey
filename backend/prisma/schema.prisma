@@ -59,6 +59,8 @@ model Product {
   movements   Movement[]
   purchaseOrderItems PurchaseOrderItem[]
   adjustments InventoryAdjustment[]
+  productionInputs  InternalProductionInput[]
+  productionOutputs InternalProductionOutput[]
 
   @@index([warehouseId])
   @@index([status])
@@ -84,6 +86,8 @@ model Lot {
   movements   Movement[]
   purchaseOrderItems PurchaseOrderItem[]
   adjustments InventoryAdjustment[]
+  productionInputs  InternalProductionInput[]
+  productionOutputs InternalProductionOutput[]
 
   @@index([productId])
 }
@@ -228,6 +232,54 @@ model InventoryAdjustment {
   createdBy     String
   date          DateTime @default(now())
 
+  @@index([productId])
+  @@index([lotId])
+}
+
+model InternalProduction {
+  id               String   @id @default(uuid())
+  productionNumber String   @unique @default("PR-00000")
+  date             DateTime @default(now())
+  status           String   @default("COMPLETADO") // PENDIENTE o COMPLETADO
+  createdBy        String
+  
+  inputs           InternalProductionInput[]
+  outputs          InternalProductionOutput[]
+  
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model InternalProductionInput {
+  id                   String   @id @default(uuid())
+  internalProductionId String
+  internalProduction   InternalProduction @relation(fields: [internalProductionId], references: [id], onDelete: Cascade)
+  
+  productId            String
+  product              Product  @relation(fields: [productId], references: [id])
+  lotId                String
+  lot                  Lot      @relation(fields: [lotId], references: [id])
+  
+  quantity             Decimal  @db.Decimal(10, 2)
+  
+  @@index([internalProductionId])
+  @@index([productId])
+  @@index([lotId])
+}
+
+model InternalProductionOutput {
+  id                   String   @id @default(uuid())
+  internalProductionId String
+  internalProduction   InternalProduction @relation(fields: [internalProductionId], references: [id], onDelete: Cascade)
+  
+  productId            String
+  product              Product  @relation(fields: [productId], references: [id])
+  lotId                String
+  lot                  Lot      @relation(fields: [lotId], references: [id])
+  
+  quantity             Decimal  @db.Decimal(10, 2)
+  
+  @@index([internalProductionId])
   @@index([productId])
   @@index([lotId])
 }

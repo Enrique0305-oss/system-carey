@@ -11,6 +11,7 @@ const authRoutes = require('./routes/authRoutes');
 const purchaseOrderRoutes = require('./routes/purchaseOrderRoutes');
 const providerRoutes = require('./routes/providerRoutes');
 const ajustesRoutes = require('./routes/ajustesRoutes');
+const produccionRoutes = require('./routes/produccion.routes');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -28,6 +29,7 @@ app.use('/api/purchase-orders', purchaseOrderRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/providers', providerRoutes);
 app.use('/api/ajustes', ajustesRoutes);
+app.use('/api/produccion', produccionRoutes);
 
 // Iniciar Servidor
 app.listen(PORT, () => {
