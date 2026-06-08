@@ -8,13 +8,13 @@ const getProducciones = async (req, res) => {
         inputs: {
           include: {
             product: true,
-            lot: true
+            lot: { include: { provider: true } }
           }
         },
         outputs: {
           include: {
             product: true,
-            lot: true
+            lot: { include: { provider: true } }
           }
         }
       }
@@ -47,6 +47,19 @@ const createProduccion = async (req, res) => {
 
       // Procesar INPUTS (Salidas de almacén)
       for (const input of inputs) {
+        // Obtener saldo anterior (ANTES de descontar) y verificar stock
+        const lotToCheck = await tx.lot.findUnique({ where: { id: input.lotId } });
+        if (!lotToCheck) {
+          throw new Error(`Lote con ID ${input.lotId} no encontrado`);
+        }
+        if (lotToCheck.quantity < parseFloat(input.quantity)) {
+          throw new Error(`Stock insuficiente en el lote ${lotToCheck.lotCode}. Disponible: ${lotToCheck.quantity}, Solicitado: ${input.quantity}`);
+        }
+
+        const productLots = await tx.lot.findMany({ where: { productId: input.productId, status: 'ACTIVO' } });
+        const previousBalance = productLots.reduce((acc, l) => acc + parseFloat(l.quantity), 0);
+        const newBalance = previousBalance - parseFloat(input.quantity);
+
         // Reducir stock del lote
         const lot = await tx.lot.update({
           where: { id: input.lotId },
@@ -72,6 +85,8 @@ const createProduccion = async (req, res) => {
             lotId: input.lotId,
             type: "SALIDA",
             quantity: parseFloat(input.quantity),
+            previousBalance,
+            newBalance,
             reason: `Consumo en Producción ${productionNumber}`,
             reference: productionNumber,
             date: produccion.date,
@@ -82,9 +97,33 @@ const createProduccion = async (req, res) => {
 
       // Procesar OUTPUTS (Entradas de almacén)
       const dateStr = produccion.date.toISOString().split('T')[0].replace(/-/g, ''); // YYYYMMDD
-      let outputIndex = 1;
+      
+      // Contar cuántos lotes se han generado hoy para asignar un sufijo único
+      const todayLotsCount = await tx.lot.count({
+        where: {
+          lotCode: { startsWith: `L-${dateStr}-` }
+        }
+      });
+      let outputIndex = todayLotsCount + 1;
+
+      // Obtener el providerId heredado (del primer insumo que tenga uno)
+      let inheritedProviderId = null;
+      if (req.body.inheritProvider !== false) {
+        for (const input of inputs) {
+          const inputLot = await tx.lot.findUnique({ where: { id: input.lotId }, select: { providerId: true } });
+          if (inputLot && inputLot.providerId) {
+            inheritedProviderId = inputLot.providerId;
+            break;
+          }
+        }
+      }
 
       for (const output of outputs) {
+        // Obtener saldo anterior (ANTES de crear el lote de entrada)
+        const productLots = await tx.lot.findMany({ where: { productId: output.productId, status: 'ACTIVO' } });
+        const previousBalance = productLots.reduce((acc, l) => acc + parseFloat(l.quantity), 0);
+        const newBalance = previousBalance + parseFloat(output.quantity);
+
         // Generar lote automático para la salida
         const autoLotCode = `L-${dateStr}-${String(outputIndex).padStart(2, '0')}`;
         outputIndex++;
@@ -97,6 +136,7 @@ const createProduccion = async (req, res) => {
             quantity: parseFloat(output.quantity),
             entryDate: produccion.date,
             expirationDate: output.expirationDate ? new Date(output.expirationDate) : null,
+            providerId: inheritedProviderId,
             createdBy: createdBy
           }
         });
@@ -118,6 +158,8 @@ const createProduccion = async (req, res) => {
             lotId: newLot.id,
             type: "ENTRADA",
             quantity: parseFloat(output.quantity),
+            previousBalance,
+            newBalance,
             reason: `Ingreso por Producción ${productionNumber}`,
             reference: productionNumber,
             date: produccion.date,

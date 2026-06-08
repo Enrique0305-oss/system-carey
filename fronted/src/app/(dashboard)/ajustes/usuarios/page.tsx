@@ -1,0 +1,327 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { Users, Plus, Search, Edit, Trash2, Key, Shield, UserX, UserCheck } from "lucide-react";
+import toast from "react-hot-toast";
+import { useRouter } from "next/navigation";
+import Cookies from "js-cookie";
+
+export default function GestionUsuariosPage() {
+  const router = useRouter();
+  const [users, setUsers] = useState<any[]>([]);
+  const [areas, setAreas] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<any>(null);
+  
+  // Form state
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [areaId, setAreaId] = useState("");
+  const [status, setStatus] = useState("ACTIVO");
+
+  useEffect(() => {
+    // Protección de Ruta
+    const userArea = Cookies.get('user_area');
+    if (userArea !== 'Gerencia' && userArea !== 'Administrador') {
+      toast.error("Acceso denegado. Solo Gerencia puede ver esta sección.");
+      router.push("/");
+      return;
+    }
+
+    fetchUsers();
+    fetchAreas();
+  }, [router]);
+
+  const fetchUsers = async () => {
+    try {
+      const res = await fetch("http://localhost:4000/api/users");
+      const data = await res.json();
+      setUsers(data);
+    } catch (err) {
+      toast.error("Error al cargar usuarios");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchAreas = async () => {
+    try {
+      const res = await fetch("http://localhost:4000/api/users/areas");
+      const data = await res.json();
+      setAreas(data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const openModal = (user?: any) => {
+    if (user) {
+      setEditingUser(user);
+      setName(user.name);
+      setEmail(user.email);
+      setAreaId(user.areaId);
+      setStatus(user.status);
+      setPassword(""); // Blank for editing unless changing
+    } else {
+      setEditingUser(null);
+      setName("");
+      setEmail("");
+      setAreaId("");
+      setStatus("ACTIVO");
+      setPassword("");
+    }
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setEditingUser(null);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name || !email || !areaId) {
+      toast.error("Nombre, correo y área son obligatorios");
+      return;
+    }
+
+    const payload: any = { name, email, areaId, status };
+    if (password) payload.password = password;
+    if (editingUser && password) payload.newPassword = password;
+
+    try {
+      const url = editingUser 
+        ? `http://localhost:4000/api/users/${editingUser.id}` 
+        : `http://localhost:4000/api/users`;
+      
+      const method = editingUser ? "PUT" : "POST";
+      
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Error al guardar");
+      }
+
+      toast.success(editingUser ? "Usuario actualizado" : "Usuario creado");
+      closeModal();
+      fetchUsers();
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("¿Seguro que deseas desactivar este usuario?")) return;
+    try {
+      const res = await fetch(`http://localhost:4000/api/users/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Error al desactivar");
+      toast.success("Usuario desactivado");
+      fetchUsers();
+    } catch (error) {
+      toast.error("Error al desactivar");
+    }
+  };
+
+  const filteredUsers = users.filter(u => 
+    u.name.toLowerCase().includes(search.toLowerCase()) || 
+    u.email.toLowerCase().includes(search.toLowerCase()) ||
+    u.area.name.toLowerCase().includes(search.toLowerCase())
+  );
+
+  if (loading) return <div className="p-8 text-center text-gray-500">Cargando usuarios...</div>;
+
+  return (
+    <div className="max-w-7xl mx-auto p-6 space-y-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100 gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800 tracking-tight flex items-center gap-2">
+            <Users className="text-carey-red" size={24} /> Gestión de Usuarios
+          </h1>
+          <p className="text-gray-500 mt-1 text-sm">Administra los accesos al sistema y asigna roles por área.</p>
+        </div>
+        <div className="flex gap-3 w-full md:w-auto">
+          <div className="relative flex-1 md:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+            <input 
+              type="text" 
+              placeholder="Buscar usuario..." 
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-carey-red focus:outline-none text-sm text-gray-900"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+          <button 
+            onClick={() => openModal()}
+            className="flex items-center gap-2 bg-carey-red hover:bg-red-800 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm whitespace-nowrap shadow-sm shadow-red-200"
+          >
+            <Plus size={18} /> Nuevo Usuario
+          </button>
+        </div>
+      </div>
+
+      <div className="bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden">
+        <table className="w-full text-left text-sm">
+          <thead className="bg-gray-50 text-gray-500 border-b border-gray-100">
+            <tr>
+              <th className="px-6 py-4 font-medium">Nombre / Email</th>
+              <th className="px-6 py-4 font-medium">Área</th>
+              <th className="px-6 py-4 font-medium">Estado</th>
+              <th className="px-6 py-4 font-medium text-right">Acciones</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-50">
+            {filteredUsers.map(user => (
+              <tr key={user.id} className="hover:bg-gray-50/50 transition-colors">
+                <td className="px-6 py-4">
+                  <div className="font-bold text-gray-800 flex items-center gap-2">
+                    {user.name}
+                    {user.area.name.includes("Gerencia") && <Shield size={14} className="text-blue-500" />}
+                  </div>
+                  <div className="text-gray-500 text-xs">{user.email}</div>
+                </td>
+                <td className="px-6 py-4">
+                  <span className="bg-gray-100 text-gray-700 px-2.5 py-1 rounded-md text-xs font-medium border border-gray-200">
+                    {user.area.name}
+                  </span>
+                </td>
+                <td className="px-6 py-4">
+                  {user.status === 'ACTIVO' ? (
+                    <span className="flex items-center gap-1 text-green-600 bg-green-50 px-2.5 py-1 rounded-md w-fit text-xs font-bold">
+                      <UserCheck size={14} /> Activo
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1 text-red-600 bg-red-50 px-2.5 py-1 rounded-md w-fit text-xs font-bold">
+                      <UserX size={14} /> Inactivo
+                    </span>
+                  )}
+                </td>
+                <td className="px-6 py-4 text-right">
+                  <div className="flex justify-end gap-2">
+                    <button 
+                      onClick={() => openModal(user)}
+                      className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                      title="Editar o cambiar contraseña"
+                    >
+                      <Edit size={16} />
+                    </button>
+                    {user.status === 'ACTIVO' && (
+                      <button 
+                        onClick={() => handleDelete(user.id)}
+                        className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        title="Desactivar"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            ))}
+            {filteredUsers.length === 0 && (
+              <tr>
+                <td colSpan={4} className="p-8 text-center text-gray-500">No se encontraron usuarios</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+              <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                {editingUser ? <Edit size={20} className="text-carey-red" /> : <Plus size={20} className="text-carey-red" />}
+                {editingUser ? "Editar Usuario" : "Nuevo Usuario"}
+              </h2>
+            </div>
+            
+            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Nombre Completo</label>
+                <input 
+                  type="text" required
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-carey-red focus:outline-none text-gray-900"
+                  value={name} onChange={(e) => setName(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Correo Electrónico (Usuario)</label>
+                <input 
+                  type="email" required
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-carey-red focus:outline-none text-gray-900"
+                  value={email} onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
+                  <Key size={14} /> {editingUser ? "Nueva Contraseña (Opcional)" : "Contraseña"}
+                </label>
+                <input 
+                  type="password"
+                  placeholder={editingUser ? "Dejar en blanco para mantener la actual" : "carey123"}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-carey-red focus:outline-none text-gray-900"
+                  value={password} onChange={(e) => setPassword(e.target.value)}
+                />
+                {!editingUser && !password && <p className="text-[10px] text-gray-500 mt-1">Si dejas en blanco, la contraseña será 'carey123'</p>}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Área / Rol</label>
+                <select 
+                  required
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-carey-red focus:outline-none text-gray-900"
+                  value={areaId} onChange={(e) => setAreaId(e.target.value)}
+                >
+                  <option value="">-- Seleccionar Área --</option>
+                  {areas.map(a => (
+                    <option key={a.id} value={a.id}>{a.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              {editingUser && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Estado</label>
+                  <select 
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-carey-red focus:outline-none text-gray-900"
+                    value={status} onChange={(e) => setStatus(e.target.value)}
+                  >
+                    <option value="ACTIVO">Activo</option>
+                    <option value="INACTIVO">Inactivo</option>
+                  </select>
+                </div>
+              )}
+
+              <div className="pt-4 flex gap-3">
+                <button 
+                  type="button" onClick={closeModal}
+                  className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  type="submit"
+                  className="flex-1 px-4 py-2 bg-carey-red hover:bg-red-800 text-white rounded-lg font-medium transition-colors shadow-sm shadow-red-200"
+                >
+                  Guardar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

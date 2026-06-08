@@ -53,6 +53,7 @@ const createOrder = async (req, res) => {
             productId: item.productId,
             lotCode: item.lotCode,
             quantity: 0, // Se ingresará cantidad real cuando la orden cambie a COMPLETADA o se reciba
+            providerId: providerId,
             expirationDate: item.expirationDate ? new Date(item.expirationDate) : null,
           }
         });

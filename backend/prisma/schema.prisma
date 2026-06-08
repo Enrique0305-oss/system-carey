@@ -61,6 +61,9 @@ model Product {
   adjustments InventoryAdjustment[]
   productionInputs  InternalProductionInput[]
   productionOutputs InternalProductionOutput[]
+  recipeAsFinal     ProductRecipe? @relation("FinalProductRecipe")
+  recipeItemsAsInput ProductRecipeItem[]
+  dispatchItems     DispatchItem[]
 
   @@index([warehouseId])
   @@index([status])
@@ -73,6 +76,9 @@ model Lot {
   
   lotCode     String
   quantity    Decimal   @db.Decimal(10, 2)
+  
+  providerId  String?
+  provider    Provider? @relation(fields: [providerId], references: [id])
   entryDate      DateTime  @default(now())
   expirationDate DateTime?
   
@@ -88,8 +94,10 @@ model Lot {
   adjustments InventoryAdjustment[]
   productionInputs  InternalProductionInput[]
   productionOutputs InternalProductionOutput[]
+  dispatchItems     DispatchItem[]
 
   @@index([productId])
+  @@unique([productId, lotCode])
 }
 
 model Movement {
@@ -161,6 +169,7 @@ model Provider {
   updatedAt       DateTime  @updatedAt
 
   purchaseOrders  PurchaseOrder[]
+  lots            Lot[]
 }
 
 model PurchaseOrder {
@@ -280,6 +289,79 @@ model InternalProductionOutput {
   quantity             Decimal  @db.Decimal(10, 2)
   
   @@index([internalProductionId])
+  @@index([productId])
+  @@index([lotId])
+}
+
+model ProductRecipe {
+  id              String   @id @default(uuid())
+  finalProductId  String   @unique
+  finalProduct    Product  @relation("FinalProductRecipe", fields: [finalProductId], references: [id])
+  
+  items           ProductRecipeItem[]
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model ProductRecipeItem {
+  id              String   @id @default(uuid())
+  recipeId        String
+  recipe          ProductRecipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  
+  inputId         String
+  inputProduct    Product  @relation(fields: [inputId], references: [id])
+  
+  quantity        Decimal  @db.Decimal(10, 4) // Cantidad requerida para hacer 1 unidad del producto final
+  
+  @@unique([recipeId, inputId])
+}
+
+model Client {
+  id              String    @id @default(uuid())
+  razonSocial     String
+  ruc             String?   @db.VarChar(20)
+  direccion       String?   @db.Text
+  telefono        String?
+  email           String?
+  estado          Status    @default(ACTIVO)
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  dispatches      Dispatch[]
+}
+
+model Dispatch {
+  id               String   @id @default(uuid())
+  dispatchNumber   String   @unique @default("D-00000")
+  clientId         String
+  client           Client   @relation(fields: [clientId], references: [id])
+  date             DateTime @default(now())
+  status           String   @default("COMPLETADO")
+  createdBy        String
+  
+  items            DispatchItem[]
+  
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  
+  @@index([clientId])
+}
+
+model DispatchItem {
+  id              String   @id @default(uuid())
+  dispatchId      String
+  dispatch        Dispatch @relation(fields: [dispatchId], references: [id], onDelete: Cascade)
+  
+  productId       String
+  product         Product  @relation(fields: [productId], references: [id])
+  lotId           String
+  lot             Lot      @relation(fields: [lotId], references: [id])
+  
+  quantity        Decimal  @db.Decimal(10, 2)
+  
+  @@index([dispatchId])
   @@index([productId])
   @@index([lotId])
 }

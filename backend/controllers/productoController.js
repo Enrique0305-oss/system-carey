@@ -11,8 +11,10 @@ const getProductos = async (req, res) => {
         status: statusFilter !== undefined ? statusFilter : undefined
       },
       include: {
+        warehouse: true,
         lots: {
-          where: { status: 'ACTIVO' }
+          where: { status: 'ACTIVO' },
+          include: { provider: true }
         }
       }
     });

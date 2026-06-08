@@ -495,7 +495,18 @@ export default function OrdenesCompraPage() {
                               Existente
                            </label>
                            <label className="flex items-center text-gray-700 cursor-pointer">
-                              <input type="radio" name="lotOption" value="nuevo" checked={newItem.lotOption === 'nuevo'} onChange={() => setNewItem({...newItem, lotOption: 'nuevo'})} className="mr-1 accent-blue-600" />
+                              <input 
+                                type="radio" 
+                                name="lotOption" 
+                                value="nuevo" 
+                                checked={newItem.lotOption === 'nuevo'} 
+                                onChange={() => {
+                                  const dateStr = new Date().toISOString().split('T')[0].replace(/-/g, '');
+                                  const randomSuffix = Math.floor(100 + Math.random() * 900);
+                                  setNewItem({...newItem, lotOption: 'nuevo', lotCode: `L-${dateStr}-${randomSuffix}`});
+                                }} 
+                                className="mr-1 accent-blue-600" 
+                              />
                               Nuevo
                            </label>
                         </div>
@@ -508,7 +519,13 @@ export default function OrdenesCompraPage() {
                            </select>
                         ) : (
                            <div className="space-y-1.5">
-                             <input type="text" placeholder="Lote N°" value={newItem.lotCode} onChange={e => setNewItem({...newItem, lotCode: e.target.value})} className="w-full border border-gray-300 rounded text-xs px-2 py-1.5 outline-none text-gray-900 focus:ring-1 focus:ring-blue-500" />
+                             <input 
+                               type="text" 
+                               placeholder="Lote Auto-generado" 
+                               value={newItem.lotCode} 
+                               readOnly
+                               className="w-full border border-gray-300 rounded text-xs px-2 py-1.5 outline-none text-gray-500 bg-gray-100 cursor-not-allowed" 
+                             />
                              <input type="date" value={newItem.expirationDate} onChange={e => setNewItem({...newItem, expirationDate: e.target.value})} className="w-full border border-gray-300 rounded text-xs px-2 py-1.5 outline-none text-gray-900 focus:ring-1 focus:ring-blue-500" />
                            </div>
                         )}

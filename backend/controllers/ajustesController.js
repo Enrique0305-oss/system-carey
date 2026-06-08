@@ -84,7 +84,7 @@ const createAjuste = async (req, res) => {
           quantity: adjustmentQty, // siempre positivo
           previousBalance,
           newBalance,
-          reason: `Ajuste de Inventario - ${reason}`,
+          reason: reason === "Consumo Interno" ? "Consumo Interno" : `Ajuste de Inventario - ${reason}`,
           reference: newAdjustmentNumber,
           createdBy: createdBy || "Sistema"
         }

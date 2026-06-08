@@ -3,11 +3,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
-import { Lock, Mail, ArrowRight } from "lucide-react";
+import { Lock, Mail, ArrowRight, Eye, EyeOff } from "lucide-react";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -104,11 +105,14 @@ export default function LoginPage() {
                   </div>
                   <input
                     type="email"
+                    name="email"
+                    autoComplete="email"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="bg-[#11161E]/80 border border-white/[0.08] block w-full pl-11 pr-4 py-3 text-white text-sm rounded-xl outline-none focus:border-[#A02014] focus:ring-4 focus:ring-[#A02014]/10 transition-all duration-200"
                     placeholder="admin@carey.com"
+                    style={{ WebkitBoxShadow: '0 0 0px 1000px #11161E inset', WebkitTextFillColor: 'white' }}
                   />
                 </div>
               </div>
@@ -123,13 +127,23 @@ export default function LoginPage() {
                     <Lock className="h-4 w-4 text-gray-500" />
                   </div>
                   <input
-                    type="password"
+                    type={showPassword ? "text" : "password"}
+                    name="password"
+                    autoComplete="current-password"
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="bg-[#11161E]/80 border border-white/[0.08] block w-full pl-11 pr-4 py-3 text-white text-sm rounded-xl outline-none focus:border-[#A02014] focus:ring-4 focus:ring-[#A02014]/10 transition-all duration-200"
+                    className="bg-[#11161E]/80 border border-white/[0.08] block w-full pl-11 pr-12 py-3 text-white text-sm rounded-xl outline-none focus:border-[#A02014] focus:ring-4 focus:ring-[#A02014]/10 transition-all duration-200"
                     placeholder="••••••"
+                    style={{ WebkitBoxShadow: '0 0 0px 1000px #11161E inset', WebkitTextFillColor: 'white' }}
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-500 hover:text-gray-300 transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
                 </div>
               </div>
 

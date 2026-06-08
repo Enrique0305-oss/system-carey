@@ -14,6 +14,10 @@ const purchaseOrderRoutes = require('./routes/purchaseOrderRoutes');
 const providerRoutes = require('./routes/providerRoutes');
 const ajustesRoutes = require('./routes/ajustesRoutes');
 const produccionRoutes = require('./routes/produccion.routes');
+const clientRoutes = require('./routes/clientRoutes');
+const dispatchRoutes = require('./routes/dispatchRoutes');
+const traceabilityRoutes = require('./routes/traceabilityRoutes');
+const userRoutes = require('./routes/userRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -31,7 +35,13 @@ app.use('/api/purchase-orders', purchaseOrderRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/providers', providerRoutes);
 app.use('/api/ajustes', ajustesRoutes);
+const recipeRoutes = require('./routes/recipeRoutes');
+app.use('/api/products', recipeRoutes);
 app.use('/api/produccion', produccionRoutes);
+app.use('/api/clients', clientRoutes);
+app.use('/api/dispatches', dispatchRoutes);
+app.use('/api/traceability', traceabilityRoutes);
+app.use('/api/users', userRoutes);
 
 // Iniciar Servidor
 app.listen(PORT, () => {

@@ -17,7 +17,7 @@ export default function ProduccionPage() {
   const [inputs, setInputs] = useState<{ productId: string, lotId: string, quantity: string }[]>([]);
   const [outputs, setOutputs] = useState<{ productId: string, quantity: string, expirationDate: string }[]>([]);
   
-  const [currentInput, setCurrentInput] = useState({ productId: "", lotId: "", quantity: "" });
+  const [currentInput, setCurrentInput] = useState({ warehouseId: "", productId: "", lotId: "", quantity: "" });
   const [currentOutput, setCurrentOutput] = useState({ productId: "", quantity: "", expirationDate: "" });
 
   const [userName, setUserName] = useState("Usuario");
@@ -115,8 +115,8 @@ export default function ProduccionPage() {
 
   const addInput = () => {
     if (currentInput.productId && currentInput.lotId && currentInput.quantity) {
-      setInputs([...inputs, currentInput]);
-      setCurrentInput({ productId: "", lotId: "", quantity: "" });
+      setInputs([...inputs, { productId: currentInput.productId, lotId: currentInput.lotId, quantity: currentInput.quantity }]);
+      setCurrentInput({ warehouseId: currentInput.warehouseId, productId: "", lotId: "", quantity: "" }); // keep warehouse selected for convenience
     }
   };
 
@@ -166,7 +166,7 @@ export default function ProduccionPage() {
                 <tr>
                   <td colSpan={5} className="text-center py-8 text-gray-500">Cargando...</td>
                 </tr>
-              ) : producciones.length === 0 ? (
+              ) : producciones.filter(prod => !prod.outputs.some((out: any) => out.product?.warehouse?.name === "Productos Terminados")).length === 0 ? (
                 <tr>
                   <td colSpan={5} className="text-center py-12 text-gray-400">
                     <div className="flex flex-col items-center justify-center">
@@ -175,7 +175,7 @@ export default function ProduccionPage() {
                   </td>
                 </tr>
               ) : (
-                producciones.map((prod) => (
+                producciones.filter(prod => !prod.outputs.some((out: any) => out.product?.warehouse?.name === "Productos Terminados")).map((prod) => (
                   <tr key={prod.id} className="hover:bg-gray-50/50 transition-colors group">
                     <td className="px-6 py-4">
                       <span className="font-mono font-bold text-gray-800 bg-gray-100 px-2.5 py-1 rounded-md">{prod.productionNumber}</span>
@@ -187,16 +187,36 @@ export default function ProduccionPage() {
                       {prod.createdBy}
                     </td>
                     <td className="px-6 py-4 text-gray-700">
-                      <ul className="list-disc pl-4">
+                      <ul className="list-none space-y-3">
                         {prod.inputs.map((inp: any) => (
-                          <li key={inp.id}>{inp.product.description} ({inp.quantity} {inp.product.unit})</li>
+                          <li key={inp.id}>
+                            <div className="font-medium text-gray-800">{inp.product.description} <span className="text-gray-500 font-normal">({inp.quantity} {inp.product.unit})</span></div>
+                            <div className="text-gray-500 text-xs flex items-center gap-2 mt-1">
+                              <span className="bg-gray-100 border border-gray-200 px-1.5 py-0.5 rounded font-mono text-[11px]">{inp.lot?.lotCode}</span>
+                              {inp.lot?.provider && (
+                                <span className="text-gray-400 flex items-center gap-1">
+                                  &bull; {inp.lot.provider.razonSocial}
+                                </span>
+                              )}
+                            </div>
+                          </li>
                         ))}
                       </ul>
                     </td>
                     <td className="px-6 py-4 text-gray-700">
-                      <ul className="list-disc pl-4">
+                      <ul className="list-none space-y-3">
                         {prod.outputs.map((out: any) => (
-                          <li key={out.id}>{out.product.description} ({out.quantity} {out.product.unit}) - Lote: {out.lot.lotCode}</li>
+                          <li key={out.id}>
+                            <div className="font-medium text-gray-800">{out.product.description} <span className="text-gray-500 font-normal">({out.quantity} {out.product.unit})</span></div>
+                            <div className="text-gray-500 text-xs flex items-center gap-2 mt-1">
+                              <span className="bg-gray-100 border border-gray-200 px-1.5 py-0.5 rounded font-mono text-[11px]">{out.lot.lotCode}</span>
+                              {out.lot.provider && (
+                                <span className="text-gray-400 flex items-center gap-1">
+                                  &bull; {out.lot.provider.razonSocial}
+                                </span>
+                              )}
+                            </div>
+                          </li>
                         ))}
                       </ul>
                     </td>
@@ -231,53 +251,80 @@ export default function ProduccionPage() {
                     1. Insumos Consumidos (Salidas)
                   </h3>
                   
-                  <div className="grid grid-cols-12 gap-3 mb-4">
-                    <div className="col-span-5">
-                      <label className="block text-xs font-semibold text-gray-500 mb-1">Producto</label>
-                      <select 
-                        value={currentInput.productId}
-                        onChange={(e) => setCurrentInput({...currentInput, productId: e.target.value, lotId: ""})}
-                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-1 focus:ring-carey-red bg-white"
-                      >
-                        <option value="">Seleccione producto...</option>
-                        {productos.filter(p => p.status === 'ACTIVO').map(p => (
-                          <option key={p.id} value={p.id}>{p.description} ({p.unit})</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="col-span-4">
-                      <label className="block text-xs font-semibold text-gray-500 mb-1">Lote Origen</label>
-                      <select 
-                        value={currentInput.lotId}
-                        onChange={(e) => setCurrentInput({...currentInput, lotId: e.target.value})}
-                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-1 focus:ring-carey-red bg-white"
-                        disabled={!currentInput.productId}
-                      >
-                        <option value="">Seleccione lote...</option>
-                        {currentInput.productId && productos.find(p => p.id === currentInput.productId)?.lots?.map((l: any) => (
-                          <option key={l.id} value={l.id}>{l.lotCode} (Stock: {l.quantity})</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="col-span-2">
-                      <label className="block text-xs font-semibold text-gray-500 mb-1">Cantidad</label>
-                      <input 
-                        type="number" 
-                        step="0.01" min="0"
-                        value={currentInput.quantity}
-                        onChange={(e) => setCurrentInput({...currentInput, quantity: e.target.value})}
-                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-1 focus:ring-carey-red"
-                      />
-                    </div>
-                    <div className="col-span-1 flex items-end">
-                      <button 
-                        type="button" onClick={addInput}
-                        className="w-full h-[38px] bg-gray-900 text-white rounded-lg flex items-center justify-center hover:bg-gray-800 transition-colors"
-                      >
-                        <Plus size={18} />
-                      </button>
-                    </div>
-                  </div>
+                  {/* Extract unique warehouses for filter */}
+                  {(() => {
+                    const uniqueWarehouses = Array.from(new Set(productos.map(p => p.warehouse?.id)))
+                      .map(id => productos.find(p => p.warehouse?.id === id)?.warehouse)
+                      .filter(Boolean);
+                    
+                    const availableProducts = currentInput.warehouseId 
+                      ? productos.filter(p => p.warehouse?.id === currentInput.warehouseId && p.status === 'ACTIVO')
+                      : [];
+
+                    return (
+                      <div className="grid grid-cols-12 gap-3 mb-4">
+                        <div className="col-span-3">
+                          <label className="block text-xs font-semibold text-gray-500 mb-1">Almacén Origen</label>
+                          <select 
+                            value={currentInput.warehouseId}
+                            onChange={(e) => setCurrentInput({...currentInput, warehouseId: e.target.value, productId: "", lotId: ""})}
+                            className="w-full border border-gray-200 rounded-lg px-2 py-2 text-sm text-gray-900 focus:ring-1 focus:ring-carey-red bg-white outline-none"
+                          >
+                            <option value="">Seleccione...</option>
+                            {uniqueWarehouses.map((w: any) => (
+                              <option key={w.id} value={w.id}>{w.name === "Productos Secos" ? "Insumos alimentarios" : w.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="col-span-3">
+                          <label className="block text-xs font-semibold text-gray-500 mb-1">Producto</label>
+                          <select 
+                            value={currentInput.productId}
+                            disabled={!currentInput.warehouseId}
+                            onChange={(e) => setCurrentInput({...currentInput, productId: e.target.value, lotId: ""})}
+                            className="w-full border border-gray-200 rounded-lg px-2 py-2 text-sm text-gray-900 focus:ring-1 focus:ring-carey-red bg-white disabled:bg-gray-100 disabled:opacity-50 outline-none"
+                          >
+                            <option value="">Seleccione producto...</option>
+                            {availableProducts.map(p => (
+                              <option key={p.id} value={p.id}>{p.description} ({p.unit})</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="col-span-3">
+                          <label className="block text-xs font-semibold text-gray-500 mb-1">Lote Origen</label>
+                          <select 
+                            value={currentInput.lotId}
+                            onChange={(e) => setCurrentInput({...currentInput, lotId: e.target.value})}
+                            className="w-full border border-gray-200 rounded-lg px-2 py-2 text-sm text-gray-900 focus:ring-1 focus:ring-carey-red bg-white disabled:bg-gray-100 disabled:opacity-50 outline-none"
+                            disabled={!currentInput.productId}
+                          >
+                            <option value="">Seleccione lote...</option>
+                            {currentInput.productId && availableProducts.find(p => p.id === currentInput.productId)?.lots?.filter((l:any)=>l.status==='ACTIVO' && Number(l.quantity)>0).map((l: any) => (
+                              <option key={l.id} value={l.id}>{l.lotCode} (Stock: {l.quantity})</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="col-span-2">
+                          <label className="block text-xs font-semibold text-gray-500 mb-1">Cantidad</label>
+                          <input 
+                            type="number" 
+                            step="0.01" min="0"
+                            value={currentInput.quantity}
+                            onChange={(e) => setCurrentInput({...currentInput, quantity: e.target.value})}
+                            className="w-full border border-gray-200 rounded-lg px-2 py-2 text-sm text-gray-900 focus:ring-1 focus:ring-carey-red outline-none"
+                          />
+                        </div>
+                        <div className="col-span-1 flex items-end pb-0.5">
+                          <button 
+                            type="button" onClick={addInput}
+                            className="w-full h-[36px] bg-gray-900 text-white rounded-lg flex items-center justify-center hover:bg-gray-800 transition-colors"
+                          >
+                            <Plus size={18} />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                   {inputs.length > 0 && (
                     <div className="border border-red-200 rounded-lg bg-white overflow-hidden">
@@ -296,7 +343,10 @@ export default function ProduccionPage() {
                             return (
                               <tr key={idx}>
                                 <td className="px-3 py-2 font-medium text-gray-900">{p?.description}</td>
-                                <td className="px-3 py-2 text-gray-500">{l?.lotCode}</td>
+                                <td className="px-3 py-2 text-gray-500">
+                                  {l?.lotCode}
+                                  {l?.provider && <div className="text-xs text-blue-600 font-medium truncate max-w-[120px]">{l.provider.razonSocial}</div>}
+                                </td>
                                 <td className="px-3 py-2 text-right font-bold text-red-600">-{inp.quantity} {p?.unit}</td>
                               </tr>
                             );
@@ -367,16 +417,38 @@ export default function ProduccionPage() {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
-                          {outputs.map((out, idx) => {
-                            const p = productos.find(x => x.id === out.productId);
-                            return (
-                              <tr key={idx}>
-                                <td className="px-3 py-2 font-medium text-gray-900">{p?.description}</td>
-                                <td className="px-3 py-2 text-gray-500 italic">Auto-generado</td>
-                                <td className="px-3 py-2 text-right font-bold text-green-600">+{out.quantity} {p?.unit}</td>
-                              </tr>
-                            );
-                          })}
+                          {(() => {
+                            const dateStr = new Date().toISOString().split('T')[0].replace(/-/g, '');
+                            let todayLotsCount = 0;
+                            productos.forEach(p => {
+                              p.lots?.forEach((l: any) => {
+                                if (l.lotCode?.startsWith(`L-${dateStr}-`)) {
+                                  todayLotsCount++;
+                                }
+                              });
+                            });
+
+                            return outputs.map((out, idx) => {
+                              const p = productos.find(x => x.id === out.productId);
+                              const inheritedProvider = inputs.map(inp => {
+                                const prodInp = productos.find(x => x.id === inp.productId);
+                                return prodInp?.lots?.find((x: any) => x.id === inp.lotId)?.provider;
+                              }).find(prov => prov);
+                              
+                              const previewLotCode = `L-${dateStr}-${String(todayLotsCount + idx + 1).padStart(2, '0')}`;
+
+                              return (
+                                <tr key={idx}>
+                                  <td className="px-3 py-2 font-medium text-gray-900">{p?.description}</td>
+                                  <td className="px-3 py-2">
+                                    <span className="text-gray-900 font-mono text-xs bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200">{previewLotCode}</span>
+                                    {inheritedProvider && <div className="text-xs text-blue-600 font-medium truncate max-w-[120px] mt-0.5">Prov: {inheritedProvider.razonSocial}</div>}
+                                  </td>
+                                  <td className="px-3 py-2 text-right font-bold text-green-600">+{out.quantity} {p?.unit}</td>
+                                </tr>
+                              );
+                            });
+                          })()}
                         </tbody>
                       </table>
                     </div>

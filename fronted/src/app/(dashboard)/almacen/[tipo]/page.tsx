@@ -3,8 +3,9 @@
 import { useEffect, useState, use } from "react";
 
 import { usePathname } from "next/navigation";
-import { Plus, Trash2, Eye, Pencil, Trash, Check } from "lucide-react";
+import { Plus, Trash2, Eye, Pencil, Trash, Check, ClipboardList } from "lucide-react";
 import toast from "react-hot-toast";
+import RecipeModal from "./RecipeModal";
 
 // Mapeo de la URL al nombre real de la base de datos
 const nameMapping: Record<string, string> = {
@@ -50,11 +51,21 @@ export default function AlmacenPage({ params }: { params: Promise<{ tipo: string
   const [productToDelete, setProductToDelete] = useState<any>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Recipe State
+  const [isRecipeModalOpen, setIsRecipeModalOpen] = useState(false);
+  const [productForRecipe, setProductForRecipe] = useState<any>(null);
+
+  const openRecipeModal = (prod: any) => {
+    setProductForRecipe(prod);
+    setIsRecipeModalOpen(true);
+  };
+
   // Filters State
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("ACTIVO");
 
   const realName = nameMapping[resolvedParams.tipo] || "Almacén Desconocido";
+  const displayName = realName === "Productos Secos" ? "Insumos alimentarios" : realName;
 
   useEffect(() => {
     if (realName !== "Almacén Desconocido") {
@@ -224,8 +235,8 @@ export default function AlmacenPage({ params }: { params: Promise<{ tipo: string
     <div className="space-y-6">
       <div className="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800 tracking-tight">
-            Almacén: <span className="text-carey-red">{realName}</span>
+          <h1 className="text-2xl font-bold text-gray-800">
+            Almacén: <span className="text-carey-red">{displayName}</span>
           </h1>
           <p className="text-gray-500 mt-1">Gestión de inventario y lotes.</p>
         </div>
@@ -348,6 +359,15 @@ export default function AlmacenPage({ params }: { params: Promise<{ tipo: string
                         </button>
                         {prod.status === "ACTIVO" ? (
                           <>
+                            {realName === "Productos Terminados" && (
+                              <button 
+                                onClick={() => openRecipeModal(prod)}
+                                className="p-1.5 border border-purple-200 rounded-lg text-purple-600 hover:bg-purple-50 transition-all" 
+                                title="Definir Receta"
+                              >
+                                <ClipboardList size={16} />
+                              </button>
+                            )}
                             <button 
                               onClick={() => openEditModal(prod)}
                               className="p-1.5 border border-[#e0e7ff] rounded-lg text-[#3b82f6] hover:bg-blue-50 transition-all" 
@@ -607,6 +627,7 @@ export default function AlmacenPage({ params }: { params: Promise<{ tipo: string
                       <thead className="bg-gray-50 text-gray-500">
                         <tr>
                           <th className="px-4 py-3 font-medium">Lote</th>
+                          <th className="px-4 py-3 font-medium">Origen / Proveedor</th>
                           <th className="px-4 py-3 font-medium">Fecha Ingreso</th>
                           <th className="px-4 py-3 font-medium">Vencimiento</th>
                           <th className="px-4 py-3 font-medium text-right">Stock Act.</th>
@@ -616,9 +637,16 @@ export default function AlmacenPage({ params }: { params: Promise<{ tipo: string
                         {productToView.lots.map((lot: any) => (
                           <tr key={lot.id} className="hover:bg-gray-50/50">
                             <td className="px-4 py-3 font-medium text-gray-800">{lot.lotCode}</td>
+                            <td className="px-4 py-3 text-gray-600">
+                              {lot.provider ? (
+                                <span className="text-blue-600 font-medium">{lot.provider.razonSocial}</span>
+                              ) : (
+                                <span className="text-purple-600 font-medium italic">Fabricación Propia</span>
+                              )}
+                            </td>
                             <td className="px-4 py-3 text-gray-600">{new Date(lot.entryDate).toLocaleDateString()}</td>
                             <td className="px-4 py-3 text-gray-600">{lot.expirationDate ? new Date(lot.expirationDate).toLocaleDateString() : 'N/A'}</td>
-                            <td className="px-4 py-3 font-bold text-right text-gray-800">{lot.quantity} KG</td>
+                            <td className="px-4 py-3 font-bold text-right text-gray-800">{lot.quantity} {productToView.unit || 'KG'}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -880,6 +908,12 @@ export default function AlmacenPage({ params }: { params: Promise<{ tipo: string
           </div>
         </div>
       )}
+
+      <RecipeModal 
+        isOpen={isRecipeModalOpen} 
+        onClose={() => setIsRecipeModalOpen(false)} 
+        product={productForRecipe} 
+      />
     </div>
   );
 }
