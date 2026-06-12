@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Users, Plus, Search, Edit, Trash2, Key, Shield, UserX, UserCheck } from "lucide-react";
+import { Users, Plus, Search, Edit, Trash2, Key, Shield, UserX, UserCheck, ChevronLeft, ChevronRight } from "lucide-react";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
@@ -12,6 +12,11 @@ export default function GestionUsuariosPage() {
   const [areas, setAreas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("ACTIVO");
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 20;
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<any>(null);
@@ -131,11 +136,39 @@ export default function GestionUsuariosPage() {
     }
   };
 
-  const filteredUsers = users.filter(u => 
-    u.name.toLowerCase().includes(search.toLowerCase()) || 
-    u.email.toLowerCase().includes(search.toLowerCase()) ||
-    u.area.name.toLowerCase().includes(search.toLowerCase())
+  const filteredUsers = users.filter(u => {
+    const matchesSearch = u.name.toLowerCase().includes(search.toLowerCase()) || 
+                          u.email.toLowerCase().includes(search.toLowerCase()) ||
+                          u.area.name.toLowerCase().includes(search.toLowerCase());
+    
+    const matchesStatus = statusFilter === "TODOS" || u.status === statusFilter;
+
+    return matchesSearch && matchesStatus;
+  });
+
+  // Reset pagination on filter change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, statusFilter]);
+
+  const totalPages = Math.ceil(filteredUsers.length / ITEMS_PER_PAGE);
+  const paginatedUsers = filteredUsers.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
   );
+
+  const generatePagination = () => {
+    if (totalPages <= 5) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    if (currentPage <= 3) {
+      return [1, 2, 3, '...', totalPages];
+    }
+    if (currentPage >= totalPages - 2) {
+      return [1, '...', totalPages - 2, totalPages - 1, totalPages];
+    }
+    return [1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages];
+  };
 
   if (loading) return <div className="p-8 text-center text-gray-500">Cargando usuarios...</div>;
 
@@ -148,17 +181,39 @@ export default function GestionUsuariosPage() {
           </h1>
           <p className="text-gray-500 mt-1 text-sm">Administra los accesos al sistema y asigna roles por área.</p>
         </div>
-        <div className="flex gap-3 w-full md:w-auto">
+        <div className="flex gap-3 w-full md:w-auto items-center">
           <div className="relative flex-1 md:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
             <input 
               type="text" 
-              placeholder="Buscar usuario..." 
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-carey-red focus:outline-none text-sm text-gray-900"
+              placeholder="Buscar por nombre, email o área..." 
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-carey-red focus:outline-none text-sm text-gray-900 transition-all"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
+          <div className="relative w-36">
+            <select 
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="w-full appearance-none pl-3 pr-8 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-carey-red text-gray-700 bg-white text-sm"
+            >
+              <option value="TODOS">Todos</option>
+              <option value="ACTIVO">Activos</option>
+              <option value="INACTIVO">Inactivos</option>
+            </select>
+          </div>
+          {(search || statusFilter !== "ACTIVO") && (
+            <button
+              onClick={() => {
+                setSearch('');
+                setStatusFilter('ACTIVO');
+              }}
+              className="text-sm text-gray-500 hover:text-gray-700 underline hidden sm:block"
+            >
+              Limpiar
+            </button>
+          )}
           <button 
             onClick={() => openModal()}
             className="flex items-center gap-2 bg-carey-red hover:bg-red-800 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm whitespace-nowrap shadow-sm shadow-red-200"
@@ -179,7 +234,7 @@ export default function GestionUsuariosPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
-            {filteredUsers.map(user => (
+            {paginatedUsers.map(user => (
               <tr key={user.id} className="hover:bg-gray-50/50 transition-colors">
                 <td className="px-6 py-4">
                   <div className="font-bold text-gray-800 flex items-center gap-2">
@@ -226,13 +281,60 @@ export default function GestionUsuariosPage() {
                 </td>
               </tr>
             ))}
-            {filteredUsers.length === 0 && (
+            {paginatedUsers.length === 0 && (
               <tr>
                 <td colSpan={4} className="p-8 text-center text-gray-500">No se encontraron usuarios</td>
               </tr>
             )}
           </tbody>
         </table>
+        
+        {/* Controles de Paginación */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between bg-white px-6 py-4 border-t border-gray-100">
+            <div className="text-sm text-gray-500">
+              Mostrando <span className="font-medium">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</span>-
+              <span className="font-medium">
+                {Math.min(currentPage * ITEMS_PER_PAGE, filteredUsers.length)}
+              </span>{' '}
+              de <span className="font-medium">{filteredUsers.length}</span> usuarios
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className="px-2 py-2 border border-gray-200 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronLeft size={18} />
+              </button>
+              
+              {generatePagination().map((page, index) => (
+                <button
+                  key={index}
+                  onClick={() => typeof page === 'number' ? setCurrentPage(page) : null}
+                  disabled={page === '...'}
+                  className={`px-3.5 py-2 border rounded-md text-sm font-medium transition-colors ${
+                    page === currentPage
+                      ? 'bg-carey-red text-white border-carey-red'
+                      : page === '...'
+                      ? 'border-transparent text-gray-400 cursor-default'
+                      : 'border-gray-200 text-gray-700 bg-white hover:bg-gray-50'
+                  }`}
+                >
+                  {page}
+                </button>
+              ))}
+
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+                className="px-2 py-2 border border-gray-200 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronRight size={18} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {isModalOpen && (

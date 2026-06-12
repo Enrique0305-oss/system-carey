@@ -18,6 +18,7 @@ const clientRoutes = require('./routes/clientRoutes');
 const dispatchRoutes = require('./routes/dispatchRoutes');
 const traceabilityRoutes = require('./routes/traceabilityRoutes');
 const userRoutes = require('./routes/userRoutes');
+const internalConsumptionRoutes = require('./routes/internalConsumptionRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -42,6 +43,7 @@ app.use('/api/clients', clientRoutes);
 app.use('/api/dispatches', dispatchRoutes);
 app.use('/api/traceability', traceabilityRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/internal-consumptions', internalConsumptionRoutes);
 
 // Iniciar Servidor
 app.listen(PORT, () => {

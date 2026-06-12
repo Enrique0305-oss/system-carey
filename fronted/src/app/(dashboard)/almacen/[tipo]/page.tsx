@@ -3,7 +3,7 @@
 import { useEffect, useState, use } from "react";
 
 import { usePathname } from "next/navigation";
-import { Plus, Trash2, Eye, Pencil, Trash, Check, ClipboardList } from "lucide-react";
+import { Plus, Trash2, Eye, Pencil, Trash, Check, ClipboardList, ChevronLeft, ChevronRight } from "lucide-react";
 import toast from "react-hot-toast";
 import RecipeModal from "./RecipeModal";
 
@@ -63,6 +63,10 @@ export default function AlmacenPage({ params }: { params: Promise<{ tipo: string
   // Filters State
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("ACTIVO");
+
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 20;
 
   const realName = nameMapping[resolvedParams.tipo] || "Almacén Desconocido";
   const displayName = realName === "Productos Secos" ? "Insumos alimentarios" : realName;
@@ -231,6 +235,31 @@ export default function AlmacenPage({ params }: { params: Promise<{ tipo: string
 
   const filteredProducts = productos.filter(p => p.description.toLowerCase().includes(searchTerm.toLowerCase()));
 
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter]);
+
+  // Pagination Logic
+  const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
+  const paginatedProducts = filteredProducts.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
+  const generatePagination = () => {
+    if (totalPages <= 5) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    if (currentPage <= 3) {
+      return [1, 2, 3, '...', totalPages];
+    }
+    if (currentPage >= totalPages - 2) {
+      return [1, '...', totalPages - 2, totalPages - 1, totalPages];
+    }
+    return [1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages];
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
@@ -296,14 +325,14 @@ export default function AlmacenPage({ params }: { params: Promise<{ tipo: string
                     </div>
                   </td>
                 </tr>
-              ) : productos.length === 0 ? (
+              ) : paginatedProducts.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-12 text-center text-gray-400">
-                    No hay productos registrados en este almacén.
+                    No hay productos encontrados.
                   </td>
                 </tr>
               ) : (
-                productos.map((prod) => {
+                paginatedProducts.map((prod) => {
                   const totalStock = prod.lots?.reduce((sum: number, lot: any) => sum + Number(lot.quantity), 0) || 0;
                   const minStock = Number(prod.minStock) || 0;
                   
@@ -401,6 +430,53 @@ export default function AlmacenPage({ params }: { params: Promise<{ tipo: string
             </tbody>
           </table>
         </div>
+        
+        {/* Controles de Paginación */}
+        {!loading && totalPages > 1 && (
+          <div className="flex items-center justify-between bg-white px-6 py-4 border-t border-gray-100">
+            <div className="text-sm text-gray-500">
+              Mostrando <span className="font-medium">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</span>-
+              <span className="font-medium">
+                {Math.min(currentPage * ITEMS_PER_PAGE, filteredProducts.length)}
+              </span>{' '}
+              de <span className="font-medium">{filteredProducts.length}</span> productos
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className="px-2 py-2 border border-gray-200 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronLeft size={18} />
+              </button>
+              
+              {generatePagination().map((page, index) => (
+                <button
+                  key={index}
+                  onClick={() => typeof page === 'number' ? setCurrentPage(page) : null}
+                  disabled={page === '...'}
+                  className={`px-3.5 py-2 border rounded-md text-sm font-medium transition-colors ${
+                    page === currentPage
+                      ? 'bg-carey-red text-white border-carey-red'
+                      : page === '...'
+                      ? 'border-transparent text-gray-400 cursor-default'
+                      : 'border-gray-200 text-gray-700 bg-white hover:bg-gray-50'
+                  }`}
+                >
+                  {page}
+                </button>
+              ))}
+
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+                className="px-2 py-2 border border-gray-200 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronRight size={18} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* MODAL DE NUEVO PRODUCTO */}

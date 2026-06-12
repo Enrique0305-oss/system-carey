@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Search, Edit, Trash2, X, ChevronDown, AlertTriangle, Check } from "lucide-react";
+import { Plus, Search, Edit, Trash2, X, ChevronDown, AlertTriangle, Check, ChevronLeft, ChevronRight } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function ProveedoresPage() {
@@ -12,6 +12,10 @@ export default function ProveedoresPage() {
   const [statusFilter, setStatusFilter] = useState("Todos los estados");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [providerToDelete, setProviderToDelete] = useState<any>(null);
+
+  // Paginación
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 20;
 
   const initialForm = {
     razonSocial: "",
@@ -157,6 +161,31 @@ export default function ProveedoresPage() {
     return matchesSearch && matchesStatus;
   });
 
+  // Resetear página a 1 cuando cambian los filtros
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, statusFilter]);
+
+  // Lógica de Paginación
+  const totalPages = Math.ceil(filteredProviders.length / ITEMS_PER_PAGE);
+  const paginatedProviders = filteredProviders.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
+  const generatePagination = () => {
+    if (totalPages <= 5) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    if (currentPage <= 3) {
+      return [1, 2, 3, '...', totalPages];
+    }
+    if (currentPage >= totalPages - 2) {
+      return [1, '...', totalPages - 2, totalPages - 1, totalPages];
+    }
+    return [1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages];
+  };
+
   return (
     <div className="max-w-7xl mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
@@ -210,10 +239,10 @@ export default function ProveedoresPage() {
           <tbody>
             {loading ? (
               <tr><td colSpan={7} className="text-center py-8 text-gray-500">Cargando proveedores...</td></tr>
-            ) : filteredProviders.length === 0 ? (
+            ) : paginatedProviders.length === 0 ? (
               <tr><td colSpan={7} className="text-center py-8 text-gray-500">No se encontraron proveedores</td></tr>
             ) : (
-              filteredProviders.map(p => (
+              paginatedProviders.map(p => (
                 <tr key={p.id} className="border-b border-gray-100 hover:bg-gray-50">
                   <td className="px-6 py-4">
                     <div className="font-bold text-gray-800">{p.razonSocial}</div>
@@ -259,6 +288,53 @@ export default function ProveedoresPage() {
           </tbody>
         </table>
       </div>
+
+      {/* Controles de Paginación */}
+      {!loading && totalPages > 1 && (
+        <div className="mt-6 flex items-center justify-between bg-white px-4 py-3 rounded-xl shadow-sm border border-gray-200">
+          <div className="text-sm text-gray-500">
+            Mostrando <span className="font-medium">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</span>-
+            <span className="font-medium">
+              {Math.min(currentPage * ITEMS_PER_PAGE, filteredProviders.length)}
+            </span>{' '}
+            de <span className="font-medium">{filteredProviders.length}</span> proveedores
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className="px-2 py-2 border border-gray-200 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronLeft size={18} />
+            </button>
+            
+            {generatePagination().map((page, index) => (
+              <button
+                key={index}
+                onClick={() => typeof page === 'number' ? setCurrentPage(page) : null}
+                disabled={page === '...'}
+                className={`px-3.5 py-2 border rounded-md text-sm font-medium transition-colors ${
+                  page === currentPage
+                    ? 'bg-[#1F2937] text-white border-[#1F2937]'
+                    : page === '...'
+                    ? 'border-transparent text-gray-400 cursor-default'
+                    : 'border-gray-200 text-gray-700 bg-white hover:bg-gray-50'
+                }`}
+              >
+                {page}
+              </button>
+            ))}
+
+            <button
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className="px-2 py-2 border border-gray-200 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronRight size={18} />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Modal de Nuevo Proveedor */}
       {isModalOpen && (

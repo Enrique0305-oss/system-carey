@@ -64,6 +64,7 @@ model Product {
   recipeAsFinal     ProductRecipe? @relation("FinalProductRecipe")
   recipeItemsAsInput ProductRecipeItem[]
   dispatchItems     DispatchItem[]
+  internalConsumptionItems InternalConsumptionItem[]
 
   @@index([warehouseId])
   @@index([status])
@@ -95,6 +96,7 @@ model Lot {
   productionInputs  InternalProductionInput[]
   productionOutputs InternalProductionOutput[]
   dispatchItems     DispatchItem[]
+  internalConsumptionItems InternalConsumptionItem[]
 
   @@index([productId])
   @@unique([productId, lotCode])
@@ -362,6 +364,37 @@ model DispatchItem {
   quantity        Decimal  @db.Decimal(10, 2)
   
   @@index([dispatchId])
+  @@index([productId])
+  @@index([lotId])
+}
+
+model InternalConsumption {
+  id                  String   @id @default(uuid())
+  consumptionNumber   String   @unique @default("CI-00000")
+  date                DateTime @default(now())
+  status              String   @default("COMPLETADO")
+  reason              String?  @db.Text
+  createdBy           String
+  
+  items               InternalConsumptionItem[]
+  
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+model InternalConsumptionItem {
+  id                    String   @id @default(uuid())
+  internalConsumptionId String
+  internalConsumption   InternalConsumption @relation(fields: [internalConsumptionId], references: [id], onDelete: Cascade)
+  
+  productId             String
+  product               Product  @relation(fields: [productId], references: [id])
+  lotId                 String
+  lot                   Lot      @relation(fields: [lotId], references: [id])
+  
+  quantity              Decimal  @db.Decimal(10, 2)
+  
+  @@index([internalConsumptionId])
   @@index([productId])
   @@index([lotId])
 }

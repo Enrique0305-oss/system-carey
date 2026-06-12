@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Download, Plus, Search, Eye, Filter, CheckCircle, XCircle, FileText, Trash2, Calendar, DollarSign, Package, Edit, ShoppingCart, Clock, CheckCircle2, Check, X } from "lucide-react";
+import { Download, Plus, Search, Eye, Filter, CheckCircle, XCircle, FileText, Trash2, Calendar, DollarSign, Package, Edit, ShoppingCart, Clock, CheckCircle2, Check, X, ChevronLeft, ChevronRight } from "lucide-react";
 import Cookies from "js-cookie";
 import toast from "react-hot-toast";
 import Link from "next/link";
@@ -11,7 +11,14 @@ export default function OrdenesCompraPage() {
   const [stats, setStats] = useState({ totalOrders: 0, pendingOrders: 0, totalSpent: 0 });
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [statusFilter, setStatusFilter] = useState("Todos los estados");
+  
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 20;
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [providers, setProviders] = useState<any[]>([]);
@@ -264,13 +271,54 @@ export default function OrdenesCompraPage() {
                           (statusFilter === "Pendiente" && o.status === "PENDIENTE") ||
                           (statusFilter === "Completada" && o.status === "COMPLETADA") ||
                           (statusFilter === "Cancelada" && o.status === "CANCELADA");
-    return matchesSearch && matchesStatus;
+    
+    let matchesDate = true;
+    if (startDate || endDate) {
+      const oDate = new Date(o.issueDate);
+      oDate.setHours(0, 0, 0, 0);
+
+      if (startDate) {
+        const sDate = new Date(startDate);
+        sDate.setHours(0, 0, 0, 0);
+        if (oDate < sDate) matchesDate = false;
+      }
+      if (endDate) {
+        const eDate = new Date(endDate);
+        eDate.setHours(0, 0, 0, 0);
+        if (oDate > eDate) matchesDate = false;
+      }
+    }
+    return matchesSearch && matchesStatus && matchesDate;
   }).sort((a, b) => {
     // Ordenar de mayor a menor según el N° de Orden (Ej: OC-00005 va antes que OC-00002)
     if (a.orderNumber < b.orderNumber) return 1;
     if (a.orderNumber > b.orderNumber) return -1;
     return 0;
   });
+
+  // Reset pagination on filter change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, statusFilter, startDate, endDate]);
+
+  const totalPages = Math.ceil(filteredOrders.length / ITEMS_PER_PAGE);
+  const paginatedOrders = filteredOrders.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
+  const generatePagination = () => {
+    if (totalPages <= 5) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    if (currentPage <= 3) {
+      return [1, 2, 3, '...', totalPages];
+    }
+    if (currentPage >= totalPages - 2) {
+      return [1, '...', totalPages - 2, totalPages - 1, totalPages];
+    }
+    return [1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages];
+  };
 
   return (
     <div className="max-w-7xl mx-auto p-6">
@@ -324,22 +372,53 @@ export default function OrdenesCompraPage() {
           <input 
             type="text" 
             placeholder="Buscar por N° Orden o Proveedor..." 
-            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 transition-all"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <div className="relative w-48">
-          <select 
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="w-full appearance-none pl-4 pr-10 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700 bg-white"
-          >
-            <option>Todos los estados</option>
-            <option>Pendiente</option>
-            <option>Completada</option>
-            <option>Cancelada</option>
-          </select>
+        <div className="flex flex-wrap gap-3 items-center">
+          <div className="flex gap-2 items-center">
+            <span className="text-sm text-gray-500 font-medium">Desde:</span>
+            <input 
+              type="date" 
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <span className="text-sm text-gray-500 font-medium">Hasta:</span>
+            <input 
+              type="date" 
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div className="relative w-48">
+            <select 
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="w-full appearance-none pl-4 pr-10 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700 bg-white"
+            >
+              <option>Todos los estados</option>
+              <option>Pendiente</option>
+              <option>Completada</option>
+              <option>Cancelada</option>
+            </select>
+          </div>
+          {(search || startDate || endDate || statusFilter !== "Todos los estados") && (
+            <button
+              onClick={() => {
+                setSearch('');
+                setStartDate('');
+                setEndDate('');
+                setStatusFilter('Todos los estados');
+              }}
+              className="text-sm text-gray-500 hover:text-gray-700 underline"
+            >
+              Limpiar
+            </button>
+          )}
         </div>
       </div>
 
@@ -362,12 +441,12 @@ export default function OrdenesCompraPage() {
                 <tr>
                   <td colSpan={6} className="px-6 py-8 text-center text-gray-500">Cargando órdenes...</td>
                 </tr>
-              ) : filteredOrders.length === 0 ? (
+              ) : paginatedOrders.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-8 text-center text-gray-500">No se encontraron órdenes de compra.</td>
                 </tr>
               ) : (
-                filteredOrders.map((order: any) => (
+                paginatedOrders.map((order: any) => (
                   <tr key={order.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4 font-bold text-gray-900">{order.orderNumber}</td>
                     <td className="px-6 py-4">
@@ -398,6 +477,53 @@ export default function OrdenesCompraPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Controles de Paginación */}
+        {!loading && totalPages > 1 && (
+          <div className="flex items-center justify-between bg-white px-6 py-4 border-t border-gray-100">
+            <div className="text-sm text-gray-500">
+              Mostrando <span className="font-medium">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</span>-
+              <span className="font-medium">
+                {Math.min(currentPage * ITEMS_PER_PAGE, filteredOrders.length)}
+              </span>{' '}
+              de <span className="font-medium">{filteredOrders.length}</span> órdenes
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className="px-2 py-2 border border-gray-200 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronLeft size={18} />
+              </button>
+              
+              {generatePagination().map((page, index) => (
+                <button
+                  key={index}
+                  onClick={() => typeof page === 'number' ? setCurrentPage(page) : null}
+                  disabled={page === '...'}
+                  className={`px-3.5 py-2 border rounded-md text-sm font-medium transition-colors ${
+                    page === currentPage
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : page === '...'
+                      ? 'border-transparent text-gray-400 cursor-default'
+                      : 'border-gray-200 text-gray-700 bg-white hover:bg-gray-50'
+                  }`}
+                >
+                  {page}
+                </button>
+              ))}
+
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+                className="px-2 py-2 border border-gray-200 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronRight size={18} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Modal Nueva Orden */}

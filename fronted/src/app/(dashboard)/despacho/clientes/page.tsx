@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Search, Edit, Trash2, X, ChevronDown, AlertTriangle, Check } from "lucide-react";
+import { Plus, Search, Edit, Trash2, X, ChevronDown, AlertTriangle, Check, ChevronLeft, ChevronRight } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function ClientesPage() {
@@ -9,9 +9,13 @@ export default function ClientesPage() {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("Todos los estados");
+  const [statusFilter, setStatusFilter] = useState("Activo");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [clientToDelete, setClientToDelete] = useState<any>(null);
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 20;
 
   const initialForm = {
     razonSocial: "",
@@ -147,6 +151,30 @@ export default function ClientesPage() {
     return matchesSearch && matchesStatus;
   });
 
+  // Reset pagination on filter change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, statusFilter]);
+
+  const totalPages = Math.ceil(filteredClients.length / ITEMS_PER_PAGE);
+  const paginatedClients = filteredClients.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
+  const generatePagination = () => {
+    if (totalPages <= 5) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    if (currentPage <= 3) {
+      return [1, 2, 3, '...', totalPages];
+    }
+    if (currentPage >= totalPages - 2) {
+      return [1, '...', totalPages - 2, totalPages - 1, totalPages];
+    }
+    return [1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages];
+  };
+
   return (
     <div className="max-w-7xl mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
@@ -159,28 +187,41 @@ export default function ClientesPage() {
         </button>
       </div>
 
-      <div className="bg-white p-4 rounded-t-xl border border-gray-200 border-b-0 flex gap-4">
-        <div className="relative flex-1">
+      <div className="bg-white p-4 rounded-t-xl border border-gray-200 border-b-0 flex flex-wrap gap-4 items-center">
+        <div className="relative flex-1 min-w-[300px]">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
           <input 
             type="text" 
             placeholder="Buscar por Razón Social o RUC o DNI..." 
-            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 transition-all"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <div className="relative w-48">
-          <select 
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="w-full appearance-none pl-4 pr-10 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700 bg-white"
-          >
-            <option>Todos los estados</option>
-            <option>Activo</option>
-            <option>Inactivo</option>
-          </select>
-          <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 pointer-events-none" size={16} />
+        <div className="flex flex-wrap gap-3 items-center">
+          <div className="relative w-48">
+            <select 
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="w-full appearance-none pl-4 pr-10 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700 bg-white"
+            >
+              <option>Todos los estados</option>
+              <option>Activo</option>
+              <option>Inactivo</option>
+            </select>
+            <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 pointer-events-none" size={16} />
+          </div>
+          {(search || statusFilter !== "Activo") && (
+            <button
+              onClick={() => {
+                setSearch('');
+                setStatusFilter('Activo');
+              }}
+              className="text-sm text-gray-500 hover:text-gray-700 underline"
+            >
+              Limpiar
+            </button>
+          )}
         </div>
       </div>
 
@@ -199,10 +240,10 @@ export default function ClientesPage() {
           <tbody>
             {loading ? (
               <tr><td colSpan={6} className="text-center py-8 text-gray-500">Cargando clientes...</td></tr>
-            ) : filteredClients.length === 0 ? (
+            ) : paginatedClients.length === 0 ? (
               <tr><td colSpan={6} className="text-center py-8 text-gray-500">No se encontraron clientes</td></tr>
             ) : (
-              filteredClients.map(p => (
+              paginatedClients.map(p => (
                 <tr key={p.id} className="border-b border-gray-100 hover:bg-gray-50">
                   <td className="px-6 py-4 font-bold text-gray-800">{p.razonSocial}</td>
                   <td className="px-6 py-4 text-sm text-gray-600">{p.ruc || '—'}</td>
@@ -242,6 +283,53 @@ export default function ClientesPage() {
           </tbody>
         </table>
       </div>
+
+      {/* Controles de Paginación */}
+      {!loading && totalPages > 1 && (
+        <div className="flex items-center justify-between bg-white px-6 py-4 border border-gray-200 border-t-0 rounded-b-xl">
+          <div className="text-sm text-gray-500">
+            Mostrando <span className="font-medium">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</span>-
+            <span className="font-medium">
+              {Math.min(currentPage * ITEMS_PER_PAGE, filteredClients.length)}
+            </span>{' '}
+            de <span className="font-medium">{filteredClients.length}</span> clientes
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className="px-2 py-2 border border-gray-200 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronLeft size={18} />
+            </button>
+            
+            {generatePagination().map((page, index) => (
+              <button
+                key={index}
+                onClick={() => typeof page === 'number' ? setCurrentPage(page) : null}
+                disabled={page === '...'}
+                className={`px-3.5 py-2 border rounded-md text-sm font-medium transition-colors ${
+                  page === currentPage
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : page === '...'
+                    ? 'border-transparent text-gray-400 cursor-default'
+                    : 'border-gray-200 text-gray-700 bg-white hover:bg-gray-50'
+                }`}
+              >
+                {page}
+              </button>
+            ))}
+
+            <button
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className="px-2 py-2 border border-gray-200 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronRight size={18} />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Modal de Nuevo Cliente */}
       {isModalOpen && (

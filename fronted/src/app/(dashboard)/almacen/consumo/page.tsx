@@ -1,17 +1,23 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Search, Edit2, AlertCircle } from "lucide-react";
+import { Plus, Search, Edit2, AlertCircle, ChevronLeft, ChevronRight } from "lucide-react";
 import Cookies from "js-cookie";
 import { showSuccessToast, showErrorToast } from "@/components/Toast";
 
 export default function ConsumoInternoPage() {
-  const [ajustes, setAjustes] = useState<any[]>([]);
+  const [consumos, setConsumos] = useState<any[]>([]);
   const [productos, setProductos] = useState<any[]>([]);
   const [warehouses, setWarehouses] = useState<any[]>([]);
   const [search, setSearch] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 20;
 
   const [formData, setFormData] = useState({
     warehouseId: "",
@@ -24,7 +30,7 @@ export default function ConsumoInternoPage() {
   });
 
   useEffect(() => {
-    fetchAjustes();
+    fetchConsumos();
     fetchProductos();
     fetchWarehouses();
   }, []);
@@ -41,16 +47,15 @@ export default function ConsumoInternoPage() {
     }
   };
 
-  const fetchAjustes = async () => {
+  const fetchConsumos = async () => {
     try {
-      const res = await fetch("http://localhost:4000/api/ajustes");
+      const res = await fetch("http://localhost:4000/api/internal-consumptions");
       if (res.ok) {
         const data = await res.json();
-        // Filtramos solo los que sean Consumo Interno
-        setAjustes(data.filter((a: any) => a.reason === "Consumo Interno"));
+        setConsumos(data);
       }
     } catch (error) {
-      console.error("Error fetching ajustes", error);
+      console.error("Error fetching consumos", error);
     }
   };
 
@@ -73,12 +78,17 @@ export default function ConsumoInternoPage() {
     try {
       const currentUserName = Cookies.get("user_name") || "Usuario Desconocido";
       
-      const res = await fetch("http://localhost:4000/api/ajustes", {
+      const res = await fetch("http://localhost:4000/api/internal-consumptions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ...formData,
-          createdBy: currentUserName
+          reason: formData.reference, // La justificación la guardabamos en reference
+          createdBy: currentUserName,
+          items: [{
+            productId: formData.productId,
+            lotId: formData.lotId,
+            quantity: formData.quantity
+          }]
         })
       });
 
@@ -86,7 +96,7 @@ export default function ConsumoInternoPage() {
         showSuccessToast("Consumo registrado correctamente");
         setIsModalOpen(false);
         setFormData({
-          warehouseId: formData.warehouseId, // mantenemos el almacén seleccionado por comodidad
+          warehouseId: formData.warehouseId,
           productId: "",
           lotId: "",
           typeDirection: "SALIDA",
@@ -94,8 +104,8 @@ export default function ConsumoInternoPage() {
           reason: "Consumo Interno",
           reference: ""
         });
-        fetchAjustes();
-        fetchProductos(); // Refrescar lotes
+        fetchConsumos();
+        fetchProductos();
       } else {
         const data = await res.json();
         showErrorToast(data.error || "Error al registrar el consumo");
@@ -107,10 +117,54 @@ export default function ConsumoInternoPage() {
     }
   };
 
-  const filteredAjustes = ajustes.filter(a => 
-    a.product?.description.toLowerCase().includes(search.toLowerCase()) ||
-    (a.reference && a.reference.toLowerCase().includes(search.toLowerCase()))
+  const filteredConsumos = consumos.filter(c => {
+    // Buscar en los items
+    const matchesSearch = c.items?.some((item: any) => 
+      item.product?.description.toLowerCase().includes(search.toLowerCase())
+    ) || (c.reason && c.reason.toLowerCase().includes(search.toLowerCase())) || c.consumptionNumber.toLowerCase().includes(search.toLowerCase());
+    
+    let matchesDate = true;
+    if (startDate || endDate) {
+      const cDate = new Date(c.date);
+      cDate.setHours(0, 0, 0, 0);
+
+      if (startDate) {
+        const sDate = new Date(startDate);
+        sDate.setHours(0, 0, 0, 0);
+        if (cDate < sDate) matchesDate = false;
+      }
+      if (endDate) {
+        const eDate = new Date(endDate);
+        eDate.setHours(0, 0, 0, 0);
+        if (cDate > eDate) matchesDate = false;
+      }
+    }
+    return matchesSearch && matchesDate;
+  });
+
+  // Reset pagination on filter change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, startDate, endDate]);
+
+  const totalPages = Math.ceil(filteredConsumos.length / ITEMS_PER_PAGE);
+  const paginatedConsumos = filteredConsumos.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
   );
+
+  const generatePagination = () => {
+    if (totalPages <= 5) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    if (currentPage <= 3) {
+      return [1, 2, 3, '...', totalPages];
+    }
+    if (currentPage >= totalPages - 2) {
+      return [1, '...', totalPages - 2, totalPages - 1, totalPages];
+    }
+    return [1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages];
+  };
 
   // Extraemos los almacenes reales desde el endpoint para que siempre aparezcan, 
   // incluso si aún no hay productos registrados en ellos.
@@ -142,17 +196,45 @@ export default function ConsumoInternoPage() {
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
-        <div className="p-5 border-b border-gray-100 flex gap-4 bg-gray-50/50">
-          <div className="relative flex-1 max-w-md">
+        <div className="p-5 border-b border-gray-100 flex flex-wrap gap-4 bg-gray-50/50 items-center">
+          <div className="relative flex-1 min-w-[250px]">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
             <input 
               type="text" 
               placeholder="Buscar por producto o justificación..." 
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-carey-red focus:border-transparent transition-all"
+              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-carey-red focus:border-transparent transition-all text-gray-900"
             />
           </div>
+          <div className="flex gap-2 items-center">
+            <span className="text-sm text-gray-500 font-medium">Desde:</span>
+            <input 
+              type="date" 
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-carey-red"
+            />
+            <span className="text-sm text-gray-500 font-medium">Hasta:</span>
+            <input 
+              type="date" 
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-carey-red"
+            />
+          </div>
+          {(search || startDate || endDate) && (
+            <button
+              onClick={() => {
+                setSearch('');
+                setStartDate('');
+                setEndDate('');
+              }}
+              className="text-sm text-gray-500 hover:text-gray-700 underline"
+            >
+              Limpiar filtros
+            </button>
+          )}
         </div>
 
         <div className="overflow-x-auto">
@@ -168,42 +250,54 @@ export default function ConsumoInternoPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {filteredAjustes.map((ajuste) => (
-                <tr key={ajuste.id} className="hover:bg-gray-50/50 transition-colors">
+              {paginatedConsumos.map((consumo) => (
+                <tr key={consumo.id} className="hover:bg-gray-50/50 transition-colors">
                   <td className="px-6 py-4">
-                    <span className="font-mono font-bold text-gray-800 bg-gray-100 px-2.5 py-1 rounded-md">{ajuste.adjustmentNumber}</span>
+                    <span className="font-mono font-bold text-gray-800 bg-gray-100 px-2.5 py-1 rounded-md">{consumo.consumptionNumber}</span>
                   </td>
                   <td className="px-6 py-4">
                     <div className="text-gray-900 font-medium">
-                      {new Date(ajuste.date).toLocaleDateString('es-PE')}
+                      {new Date(consumo.date).toLocaleDateString('es-PE')}
                     </div>
                     <div className="text-gray-500 text-[11px]">
-                      {new Date(ajuste.date).toLocaleTimeString('es-PE')}
+                      {new Date(consumo.date).toLocaleTimeString('es-PE')}
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="font-bold text-gray-900">{ajuste.product?.description}</div>
-                    <div className="text-[11px] text-gray-500 flex items-center gap-2 mt-0.5">
-                      <span className="bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded font-mono border border-blue-100">Lote: {ajuste.lot?.lotCode || 'S/L'}</span>
-                      <span>{ajuste.product?.warehouse?.name}</span>
+                    <div className="space-y-2">
+                      {consumo.items?.map((item: any, idx: number) => (
+                        <div key={idx}>
+                          <div className="font-bold text-gray-900">{item.product?.description}</div>
+                          <div className="text-[11px] text-gray-500 flex items-center gap-2 mt-0.5">
+                            <span className="bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded font-mono border border-blue-100">Lote: {item.lot?.lotCode || 'S/L'}</span>
+                            <span>{item.product?.warehouse?.name}</span>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </td>
                   <td className="px-6 py-4 text-center">
-                    <span className="font-bold px-2.5 py-1 rounded-md text-xs bg-red-100 text-red-800">
-                      -{ajuste.quantity} {ajuste.product?.unit}
-                    </span>
+                    <div className="space-y-2">
+                      {consumo.items?.map((item: any, idx: number) => (
+                        <div key={idx}>
+                          <span className="font-bold px-2.5 py-1 rounded-md text-xs bg-red-100 text-red-800">
+                            -{item.quantity} {item.product?.unit}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </td>
                   <td className="px-6 py-4 text-gray-600 text-[13px]">
-                    {ajuste.reference || '—'}
+                    {consumo.reason || '—'}
                   </td>
                   <td className="px-6 py-4">
                     <span className="text-xs font-medium bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
-                      {ajuste.createdBy}
+                      {consumo.createdBy}
                     </span>
                   </td>
                 </tr>
               ))}
-              {filteredAjustes.length === 0 && (
+              {paginatedConsumos.length === 0 && (
                 <tr>
                   <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
                     <div className="flex flex-col items-center justify-center">
@@ -217,6 +311,53 @@ export default function ConsumoInternoPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Controles de Paginación */}
+        {!loading && totalPages > 1 && (
+          <div className="flex items-center justify-between bg-white px-6 py-4 border-t border-gray-100">
+            <div className="text-sm text-gray-500">
+              Mostrando <span className="font-medium">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</span>-
+              <span className="font-medium">
+                {Math.min(currentPage * ITEMS_PER_PAGE, filteredConsumos.length)}
+              </span>{' '}
+              de <span className="font-medium">{filteredConsumos.length}</span> consumos
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className="px-2 py-2 border border-gray-200 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronLeft size={18} />
+              </button>
+              
+              {generatePagination().map((page, index) => (
+                <button
+                  key={index}
+                  onClick={() => typeof page === 'number' ? setCurrentPage(page) : null}
+                  disabled={page === '...'}
+                  className={`px-3.5 py-2 border rounded-md text-sm font-medium transition-colors ${
+                    page === currentPage
+                      ? 'bg-carey-red text-white border-carey-red'
+                      : page === '...'
+                      ? 'border-transparent text-gray-400 cursor-default'
+                      : 'border-gray-200 text-gray-700 bg-white hover:bg-gray-50'
+                  }`}
+                >
+                  {page}
+                </button>
+              ))}
+
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+                className="px-2 py-2 border border-gray-200 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronRight size={18} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {isModalOpen && (
