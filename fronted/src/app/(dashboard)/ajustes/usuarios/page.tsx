@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Users, Plus, Search, Edit, Trash2, Key, Shield, UserX, UserCheck, ChevronLeft, ChevronRight } from "lucide-react";
+import { Users, Plus, Search, Edit, Trash2, Key, Shield, UserX, UserCheck, ChevronLeft, ChevronRight, AlertCircle } from "lucide-react";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
@@ -19,6 +19,7 @@ export default function GestionUsuariosPage() {
   const ITEMS_PER_PAGE = 20;
   
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean, type: 'ACTIVATE' | 'DEACTIVATE' | null, user: any | null }>({ isOpen: false, type: null, user: null });
   const [editingUser, setEditingUser] = useState<any>(null);
   
   // Form state
@@ -125,7 +126,6 @@ export default function GestionUsuariosPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("¿Seguro que deseas desactivar este usuario?")) return;
     try {
       const res = await fetch(`http://localhost:4000/api/users/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Error al desactivar");
@@ -133,6 +133,31 @@ export default function GestionUsuariosPage() {
       fetchUsers();
     } catch (error) {
       toast.error("Error al desactivar");
+    } finally {
+      setConfirmModal({ isOpen: false, type: null, user: null });
+    }
+  };
+
+  const handleActivate = async (user: any) => {
+    try {
+      const payload = {
+        name: user.name,
+        email: user.email,
+        areaId: user.areaId,
+        status: 'ACTIVO'
+      };
+      const res = await fetch(`http://localhost:4000/api/users/${user.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error("Error al reactivar");
+      toast.success("Usuario reactivado con éxito");
+      fetchUsers();
+    } catch (error) {
+      toast.error("Error al reactivar");
+    } finally {
+      setConfirmModal({ isOpen: false, type: null, user: null });
     }
   };
 
@@ -270,11 +295,20 @@ export default function GestionUsuariosPage() {
                     </button>
                     {user.status === 'ACTIVO' && (
                       <button 
-                        onClick={() => handleDelete(user.id)}
+                        onClick={() => setConfirmModal({ isOpen: true, type: 'DEACTIVATE', user })}
                         className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                         title="Desactivar"
                       >
                         <Trash2 size={16} />
+                      </button>
+                    )}
+                    {user.status === 'INACTIVO' && (
+                      <button 
+                        onClick={() => setConfirmModal({ isOpen: true, type: 'ACTIVATE', user })}
+                        className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                        title="Reactivar"
+                      >
+                        <UserCheck size={16} />
                       </button>
                     )}
                   </div>
@@ -421,6 +455,54 @@ export default function GestionUsuariosPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Confirmación para Activar/Desactivar */}
+      {confirmModal.isOpen && confirmModal.user && (
+        <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className={`p-5 flex items-center gap-4 border-b ${confirmModal.type === 'ACTIVATE' ? 'bg-green-50 border-green-100' : 'bg-red-50 border-red-100'}`}>
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${confirmModal.type === 'ACTIVATE' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                {confirmModal.type === 'ACTIVATE' ? <UserCheck size={20} /> : <AlertCircle size={20} />}
+              </div>
+              <div>
+                <h3 className="font-bold text-gray-900">
+                  {confirmModal.type === 'ACTIVATE' ? 'Reactivar Usuario' : 'Desactivar Usuario'}
+                </h3>
+                <p className="text-sm text-gray-500">
+                  {confirmModal.user.name}
+                </p>
+              </div>
+            </div>
+            
+            <div className="p-5">
+              <p className="text-gray-600 text-sm">
+                {confirmModal.type === 'ACTIVATE' 
+                  ? 'Este usuario recuperará su acceso al sistema de inmediato. ¿Deseas continuar?' 
+                  : 'Este usuario perderá su acceso al sistema, pero mantendrás su historial. ¿Estás seguro?'}
+              </p>
+            </div>
+            
+            <div className="p-4 bg-gray-50 flex justify-end gap-3 border-t border-gray-100">
+              <button 
+                onClick={() => setConfirmModal({ isOpen: false, type: null, user: null })}
+                className="px-4 py-2 text-gray-600 font-medium hover:bg-gray-200 rounded-lg transition-colors text-sm"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={() => confirmModal.type === 'ACTIVATE' ? handleActivate(confirmModal.user) : handleDelete(confirmModal.user.id)}
+                className={`px-4 py-2 text-white font-medium rounded-lg transition-colors text-sm shadow-sm ${
+                  confirmModal.type === 'ACTIVATE' 
+                    ? 'bg-green-600 hover:bg-green-700 shadow-green-200' 
+                    : 'bg-red-600 hover:bg-red-700 shadow-red-200'
+                }`}
+              >
+                {confirmModal.type === 'ACTIVATE' ? 'Sí, reactivar' : 'Sí, desactivar'}
+              </button>
+            </div>
           </div>
         </div>
       )}

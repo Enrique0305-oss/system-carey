@@ -240,6 +240,7 @@ model InventoryAdjustment {
   quantity      Decimal  @db.Decimal(10, 2)
   reason        String
   reference     String?
+  referenceImage String?
   createdBy     String
   date          DateTime @default(now())
 

@@ -23,6 +23,8 @@ export default function OrdenesCompraPage() {
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [providers, setProviders] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
+  const [warehouses, setWarehouses] = useState<any[]>([]);
+  const [selectedWarehouseId, setSelectedWarehouseId] = useState("");
   
   const [formData, setFormData] = useState({
     providerId: "",
@@ -78,14 +80,17 @@ export default function OrdenesCompraPage() {
 
   const fetchProvidersAndProducts = async () => {
     try {
-      const [provRes, prodRes] = await Promise.all([
+      const [provRes, prodRes, wareRes] = await Promise.all([
         fetch("http://localhost:4000/api/providers"),
-        fetch("http://localhost:4000/api/products")
+        fetch("http://localhost:4000/api/products"),
+        fetch("http://localhost:4000/api/warehouses")
       ]);
       const provData = await provRes.json();
       const prodData = await prodRes.json();
+      const wareData = await wareRes.json();
       setProviders(provData.filter((p: any) => p.estado === "ACTIVO"));
       setProducts(prodData.filter((p: any) => p.status === "ACTIVO"));
+      setWarehouses(wareData);
     } catch (error) {
       console.error("Error fetching providers/products:", error);
     }
@@ -595,6 +600,23 @@ export default function OrdenesCompraPage() {
                 <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
                   <h3 className="text-sm font-bold text-gray-700 mb-3">Agregar Productos</h3>
                   <div className="flex flex-wrap gap-4 items-end">
+                    <div className="w-48">
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Filtrar por Almacén</label>
+                      <select 
+                        value={selectedWarehouseId}
+                        onChange={(e) => {
+                          setSelectedWarehouseId(e.target.value);
+                          setNewItem({...newItem, productId: "", lotId: "", lotCode: "", unitPrice: 0});
+                        }}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-900 focus:ring-2 focus:ring-[#1F2937] outline-none"
+                      >
+                        <option value="">Todos los almacenes</option>
+                        {warehouses.map(w => (
+                          <option key={w.id} value={w.id}>{w.name}</option>
+                        ))}
+                      </select>
+                    </div>
+
                     <div className="flex-1 min-w-[200px]">
                       <label className="block text-xs font-medium text-gray-600 mb-1">Producto</label>
                       <select 
@@ -606,7 +628,9 @@ export default function OrdenesCompraPage() {
                         className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-900 focus:ring-2 focus:ring-[#1F2937] outline-none"
                       >
                         <option value="">Seleccione...</option>
-                        {products.map(p => (
+                        {products
+                          .filter(p => selectedWarehouseId ? p.warehouseId === selectedWarehouseId : true)
+                          .map(p => (
                           <option key={p.id} value={p.id}>{p.description}</option>
                         ))}
                       </select>

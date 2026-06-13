@@ -7,13 +7,22 @@ import { Plus, Trash2, Eye, Pencil, Trash, Check, ClipboardList, ChevronLeft, Ch
 import toast from "react-hot-toast";
 import RecipeModal from "./RecipeModal";
 
-// Mapeo de la URL al nombre real de la base de datos
+// Mapeo de la URL al nombre real de la base de datos (los generados en el seed)
 const nameMapping: Record<string, string> = {
   "materia-prima": "Materia Prima",
   "productos-terminados": "Productos Terminados",
-  "productos-secos": "Productos Secos",
-  "envases": "Almacén de Envases y Suministros",
-  "quimicos": "Almacén Químicos y Suministro"
+  "productos-secos": "Insumos y Aditivos",
+  "envases": "Suministros y Envases",
+  "quimicos": "Químicos y Limpieza"
+};
+
+// Mapeo para mostrar el título bonito coincidiendo con el menú lateral
+const displayNameMapping: Record<string, string> = {
+  "materia-prima": "Materia Prima",
+  "productos-terminados": "Productos Terminados",
+  "productos-secos": "Insumos alimentarios",
+  "envases": "Envases y Suministros",
+  "quimicos": "Químicos y Suministros"
 };
 
 export default function AlmacenPage({ params }: { params: Promise<{ tipo: string }> }) {
@@ -69,7 +78,7 @@ export default function AlmacenPage({ params }: { params: Promise<{ tipo: string
   const ITEMS_PER_PAGE = 20;
 
   const realName = nameMapping[resolvedParams.tipo] || "Almacén Desconocido";
-  const displayName = realName === "Productos Secos" ? "Insumos alimentarios" : realName;
+  const displayName = displayNameMapping[resolvedParams.tipo] || realName;
 
   useEffect(() => {
     if (realName !== "Almacén Desconocido") {

@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Search, Edit2, AlertCircle, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, Search, Edit2, AlertCircle, ChevronLeft, ChevronRight, Camera, Image as ImageIcon, Download, X } from "lucide-react";
 import Cookies from "js-cookie";
+import imageCompression from 'browser-image-compression';
 import { showSuccessToast, showErrorToast } from "@/components/Toast";
 
 export default function AjustesPage() {
@@ -14,6 +15,8 @@ export default function AjustesPage() {
   const [typeFilter, setTypeFilter] = useState("TODOS");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -65,6 +68,24 @@ export default function AjustesPage() {
     }
   };
 
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      const options = {
+        maxSizeMB: 0.2, // ~200kb
+        maxWidthOrHeight: 1280,
+        useWebWorker: true,
+      };
+      try {
+        const compressedFile = await imageCompression(file, options);
+        setImageFile(compressedFile);
+      } catch (error) {
+        console.error("Error comprimiendo imagen", error);
+        showErrorToast("No se pudo procesar la imagen");
+      }
+    }
+  };
+
   const handleCreateAjuste = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -72,13 +93,22 @@ export default function AjustesPage() {
     try {
       const currentUserName = Cookies.get("user_name") || "Usuario Desconocido";
       
+      const formPayload = new FormData();
+      formPayload.append("productId", formData.productId);
+      formPayload.append("lotId", formData.lotId);
+      formPayload.append("typeDirection", formData.typeDirection);
+      formPayload.append("quantity", formData.quantity.toString());
+      formPayload.append("reason", formData.reason);
+      formPayload.append("reference", formData.reference);
+      formPayload.append("createdBy", currentUserName);
+      
+      if (imageFile) {
+        formPayload.append("image", imageFile);
+      }
+      
       const res = await fetch("http://localhost:4000/api/ajustes", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...formData,
-          createdBy: currentUserName
-        })
+        body: formPayload
       });
 
       if (res.ok) {
@@ -92,6 +122,7 @@ export default function AjustesPage() {
           reason: motivos[0],
           reference: ""
         });
+        setImageFile(null);
         fetchAjustes();
       } else {
         const data = await res.json();
@@ -270,7 +301,18 @@ export default function AjustesPage() {
                     {ajuste.reason}
                   </td>
                   <td className="px-6 py-4 text-gray-500 text-xs">
-                    {ajuste.reference || '—'}
+                    <div className="flex items-center gap-2">
+                      {ajuste.reference || '—'}
+                      {ajuste.referenceImage && (
+                        <button 
+                          onClick={() => setPreviewImage(ajuste.referenceImage)}
+                          className="text-blue-500 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 p-1.5 rounded-md transition-colors"
+                          title="Ver foto adjunta"
+                        >
+                          <ImageIcon size={16} />
+                        </button>
+                      )}
+                    </div>
                   </td>
                   <td className="px-6 py-4">
                     <span className="text-xs font-medium bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
@@ -439,16 +481,30 @@ export default function AjustesPage() {
                 </select>
               </div>
 
-              {/* Referencia */}
-              <div>
-                <label className="block text-xs font-bold text-gray-600 uppercase mb-2">Documento / Referencia</label>
-                <input 
-                  type="text" 
-                  value={formData.reference}
-                  onChange={(e) => setFormData({...formData, reference: e.target.value})}
-                  placeholder="Ej: Informe N° 005, Reporte de Merma..."
-                  className="w-full p-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-carey-red text-gray-900"
-                />
+              {/* Referencia y Foto */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 uppercase mb-2">Ref. Escrita</label>
+                  <input 
+                    type="text" 
+                    value={formData.reference}
+                    onChange={(e) => setFormData({...formData, reference: e.target.value})}
+                    placeholder="Ej: Informe N° 005..."
+                    className="w-full p-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-carey-red text-gray-900"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 uppercase mb-2">Foto / Sustento</label>
+                  <label className="flex items-center justify-center w-full h-[42px] px-4 transition bg-white border-2 border-gray-300 border-dashed rounded-md appearance-none cursor-pointer hover:border-gray-400 focus:outline-none">
+                      <span className="flex items-center space-x-2">
+                          <Camera className="w-5 h-5 text-gray-400" />
+                          <span className="font-medium text-gray-600 text-sm">
+                              {imageFile ? "1 foto lista" : "Tomar foto"}
+                          </span>
+                      </span>
+                      <input type="file" accept="image/*" capture="environment" name="file_upload" className="hidden" onChange={handleImageChange} />
+                  </label>
+                </div>
               </div>
 
               {/* Acciones */}
@@ -473,6 +529,51 @@ export default function AjustesPage() {
           </div>
         </div>
       )}
+      {/* Modal de Previsualización de Imagen */}
+      {previewImage && (
+        <div className="fixed inset-0 bg-gray-900/80 backdrop-blur-sm flex items-center justify-center z-[60] p-4" onClick={() => setPreviewImage(null)}>
+          <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200" onClick={e => e.stopPropagation()}>
+            
+            {/* Header del Modal */}
+            <div className="flex justify-between items-center p-4 border-b border-gray-100 bg-gray-50/80">
+              <h3 className="font-semibold text-gray-800 flex items-center gap-2">
+                <ImageIcon size={18} className="text-carey-red" />
+                Documento Adjunto
+              </h3>
+              <div className="flex items-center gap-2">
+                <a 
+                  href={`http://localhost:4000/uploads/ajustes/${previewImage}`}
+                  download={previewImage?.includes('.') ? previewImage : `${previewImage}.jpg`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors text-sm font-medium"
+                  title="Descargar imagen"
+                >
+                  <Download size={16} /> Descargar
+                </a>
+                <button 
+                  onClick={() => setPreviewImage(null)} 
+                  className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded-lg transition-colors"
+                  title="Cerrar"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+            </div>
+
+            {/* Contenido de la Imagen */}
+            <div className="p-4 overflow-auto flex items-center justify-center bg-gray-100/50">
+              <img 
+                src={`http://localhost:4000/uploads/ajustes/${previewImage}`} 
+                alt="Sustento de Ajuste" 
+                className="max-w-full max-h-[75vh] object-contain rounded border border-gray-200 shadow-sm"
+              />
+            </div>
+            
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

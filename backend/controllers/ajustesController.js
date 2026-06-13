@@ -22,6 +22,7 @@ const getAjustes = async (req, res) => {
 const createAjuste = async (req, res) => {
   try {
     const { productId, lotId, typeDirection, quantity, reason, reference, createdBy } = req.body;
+    const referenceImage = req.file ? req.file.filename : null;
     
     // typeDirection: 'INGRESO' o 'SALIDA'
     const adjustmentQty = parseFloat(quantity);
@@ -70,6 +71,7 @@ const createAjuste = async (req, res) => {
           quantity: adjustmentQty, // se guarda en positivo
           reason,
           reference: reference || null,
+          referenceImage,
           createdBy: createdBy || "Sistema"
         },
         include: { product: true, lot: true }

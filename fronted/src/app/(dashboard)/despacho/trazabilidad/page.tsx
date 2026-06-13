@@ -168,7 +168,7 @@ export default function TrazabilidadPage() {
                           <div className="text-sm font-bold text-gray-800">{d.client}</div>
                           <div className="text-[10px] text-gray-500 font-mono">Guía: {d.dispatchNumber} • {new Date(d.date).toLocaleDateString()}</div>
                         </div>
-                        <div className="text-[10px] font-bold text-carey-red bg-red-50 px-2 py-1 rounded border border-red-100">Despachado: {d.quantity}</div>
+                        <div className="text-[10px] font-bold text-carey-red bg-red-50 px-2 py-1 rounded border border-red-100">Despachado: {d.quantity} {traceData.targetLot.product.unit}</div>
                       </div>
                     ))}
                   </div>
@@ -189,7 +189,7 @@ export default function TrazabilidadPage() {
                           <div className="text-[10px] text-gray-500 font-mono mb-0.5">{p.productionNumber} • {new Date(p.date).toLocaleDateString()}</div>
                           <div className="font-bold text-gray-800 text-xs">Convertido en: {p.resultProducts}</div>
                         </div>
-                        <div className="text-[10px] font-bold text-carey-red bg-red-50 px-2 py-1 rounded border border-red-100">Consumido: {p.quantity}</div>
+                        <div className="text-[10px] font-bold text-carey-red bg-red-50 px-2 py-1 rounded border border-red-100">Consumido: {p.quantity} {traceData.targetLot.product.unit}</div>
                       </div>
                     ))}
                   </div>

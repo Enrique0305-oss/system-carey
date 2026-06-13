@@ -2,6 +2,7 @@ require('dotenv').config();
 
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const prisma = require('./database/connection');
 
 // Importar rutas
@@ -26,6 +27,7 @@ const PORT = process.env.PORT || 4000;
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 
 // Configurar Rutas
 app.use('/api/warehouses', almacenRoutes);
