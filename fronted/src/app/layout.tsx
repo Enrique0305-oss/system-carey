@@ -18,6 +18,7 @@ export const metadata: Metadata = {
 };
 
 import { Toaster } from "react-hot-toast";
+import { PwaRegistry } from "@/components/PwaRegistry";
 
 export default function RootLayout({
   children,
@@ -32,6 +33,7 @@ export default function RootLayout({
       <body className="min-h-full bg-background text-foreground">
         {children}
         <Toaster position="top-right" toastOptions={{ duration: 5000 }} />
+        <PwaRegistry />
       </body>
     </html>
   );

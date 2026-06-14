@@ -179,17 +179,17 @@ export default function ConsumoInternoPage() {
   const selectedProduct = productosDisponibles.find(p => p.id === formData.productId);
 
   return (
-    <div className="max-w-7xl mx-auto p-6">
-      <div className="flex justify-between items-center mb-6">
+    <div className="max-w-7xl mx-auto p-4 md:p-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-[#1F2937] tracking-tight flex items-center gap-2">
+          <h1 className="text-2xl md:text-3xl font-bold text-[#1F2937] tracking-tight flex items-center gap-2">
             Consumo <span className="text-carey-red">Interno</span>
           </h1>
-          <p className="text-gray-500 mt-1">Registra la salida de insumos y limpieza para el uso de la empresa.</p>
+          <p className="text-sm md:text-base text-gray-500 mt-1">Registra la salida de insumos y limpieza para el uso de la empresa.</p>
         </div>
         <button 
           onClick={() => setIsModalOpen(true)}
-          className="bg-carey-red hover:bg-red-800 text-white px-6 py-3 rounded-xl font-medium flex items-center transition-all shadow-md shadow-red-200 gap-2"
+          className="w-full md:w-auto justify-center bg-carey-red hover:bg-red-800 text-white px-6 py-3 rounded-xl font-medium flex items-center transition-all shadow-md shadow-red-200 gap-2"
         >
           <Plus size={20} /> Registrar Consumo
         </button>
@@ -197,7 +197,7 @@ export default function ConsumoInternoPage() {
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
         <div className="p-5 border-b border-gray-100 flex flex-wrap gap-4 bg-gray-50/50 items-center">
-          <div className="relative flex-1 min-w-[250px]">
+          <div className="relative flex-1 w-full md:min-w-[250px]">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
             <input 
               type="text" 
@@ -207,21 +207,25 @@ export default function ConsumoInternoPage() {
               className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-carey-red focus:border-transparent transition-all text-gray-900"
             />
           </div>
-          <div className="flex gap-2 items-center">
-            <span className="text-sm text-gray-500 font-medium">Desde:</span>
-            <input 
-              type="date" 
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-carey-red"
-            />
-            <span className="text-sm text-gray-500 font-medium">Hasta:</span>
-            <input 
-              type="date" 
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-carey-red"
-            />
+          <div className="flex flex-col sm:flex-row gap-2 sm:items-center w-full md:w-auto">
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <span className="text-sm text-gray-500 font-medium shrink-0 w-12 sm:w-auto">Desde:</span>
+              <input 
+                type="date" 
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="flex-1 sm:flex-none border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-carey-red"
+              />
+            </div>
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <span className="text-sm text-gray-500 font-medium shrink-0 w-12 sm:w-auto">Hasta:</span>
+              <input 
+                type="date" 
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="flex-1 sm:flex-none border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-carey-red"
+              />
+            </div>
           </div>
           {(search || startDate || endDate) && (
             <button
@@ -237,8 +241,8 @@ export default function ConsumoInternoPage() {
           )}
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left">
+        <div className="overflow-x-auto w-full">
+          <table className="w-full text-sm text-left min-w-[800px]">
             <thead className="text-gray-500 font-bold text-[11px] uppercase bg-gray-50/80 border-b-2 border-gray-100">
               <tr>
                 <th className="px-6 py-4">N° Consumo</th>

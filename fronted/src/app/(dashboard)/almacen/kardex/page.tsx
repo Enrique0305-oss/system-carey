@@ -169,9 +169,9 @@ export default function KardexPage() {
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
+          <div className="overflow-x-auto w-full">
+            <table className="w-full text-left border-collapse min-w-[1000px]">
+              <thead className="whitespace-nowrap">
                 <tr className="bg-gray-50 text-gray-500 text-sm border-b border-gray-100">
                   <th className="px-6 py-4 font-medium">Fecha y Hora</th>
                   <th className="px-6 py-4 font-medium">Tipo</th>

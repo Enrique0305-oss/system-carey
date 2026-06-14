@@ -311,7 +311,8 @@ export default function AlmacenPage({ params }: { params: Promise<{ tipo: string
           </div>
         </div>
         
-        <div className="overflow-x-auto">
+        {/* Vista de Tabla (Desktop / Tablet) */}
+        <div className="hidden lg:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-gray-50 text-gray-500 text-sm border-b border-gray-100">
@@ -438,6 +439,121 @@ export default function AlmacenPage({ params }: { params: Promise<{ tipo: string
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Vista de Tarjetas (Móviles) */}
+        <div className="lg:hidden flex flex-col gap-3 mt-2">
+          {loading ? (
+            <div className="py-12 text-center text-gray-400">
+              <div className="animate-pulse flex flex-col items-center gap-2">
+                <div className="h-6 w-6 border-2 border-carey-red border-t-transparent rounded-full animate-spin"></div>
+                Cargando inventario...
+              </div>
+            </div>
+          ) : paginatedProducts.length === 0 ? (
+            <div className="py-12 text-center text-gray-400 border border-dashed border-gray-200 rounded-xl">
+              No hay productos encontrados.
+            </div>
+          ) : (
+            paginatedProducts.map((prod) => {
+              const totalStock = prod.lots?.reduce((sum: number, lot: any) => sum + Number(lot.quantity), 0) || 0;
+              const minStock = Number(prod.minStock) || 0;
+              
+              let cardClass = "bg-white border border-gray-200 rounded-xl p-4 shadow-sm flex flex-col gap-3 transition-colors";
+              let stockBg = "bg-gray-50 border-gray-100";
+              let stockText = "text-gray-900";
+              
+              if (minStock > 0) {
+                if (totalStock < minStock) {
+                  cardClass = "bg-red-50 border border-red-200 rounded-xl p-4 shadow-sm flex flex-col gap-3";
+                  stockBg = "bg-red-100 border-red-200";
+                  stockText = "text-red-700";
+                } else if (totalStock === minStock) {
+                  cardClass = "bg-yellow-50 border border-yellow-200 rounded-xl p-4 shadow-sm flex flex-col gap-3";
+                  stockBg = "bg-yellow-100 border-yellow-200";
+                  stockText = "text-yellow-700";
+                }
+              }
+
+              return (
+                <div key={prod.id} className={cardClass}>
+                  {/* Header */}
+                  <div className="flex justify-between items-start gap-3">
+                    <div className="flex-1">
+                      <h3 className="font-bold text-gray-800 leading-tight text-sm">{prod.description}</h3>
+                      {prod.sku && <p className="text-[11px] text-gray-500 font-mono mt-1">{prod.sku}</p>}
+                    </div>
+                    <span className={`shrink-0 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                      prod.status === "ACTIVO" 
+                        ? "text-green-600 bg-green-100 border border-green-200" 
+                        : "text-red-600 bg-red-100 border border-red-200"
+                    }`}>
+                      {prod.status}
+                    </span>
+                  </div>
+
+                  {/* Data Grid */}
+                  <div className="grid grid-cols-2 gap-2 mt-1">
+                    <div className={`flex flex-col p-2.5 rounded-lg border ${stockBg}`}>
+                      <span className="text-[10px] text-gray-500 uppercase font-semibold mb-0.5">Stock Actual</span>
+                      <span className={`font-bold text-base ${stockText}`}>{totalStock} <span className="text-sm font-medium">{prod.unit}</span></span>
+                      {minStock > 0 && <span className="text-[10px] text-gray-500 mt-1">Min: {minStock} {prod.unit}</span>}
+                    </div>
+                    <div className="flex flex-col bg-gray-50 p-2.5 rounded-lg border border-gray-100">
+                      <span className="text-[10px] text-gray-500 uppercase font-semibold mb-0.5">Categoría</span>
+                      <span className="font-medium text-gray-700 text-sm mt-auto">{prod.category}</span>
+                    </div>
+                    <div className="col-span-2 flex justify-between items-center bg-gray-50 p-2.5 rounded-lg border border-gray-100">
+                      <span className="text-[10px] text-gray-500 uppercase font-semibold">Precio Unitario</span>
+                      <span className="font-bold text-gray-700 text-sm">S/ {Number(prod.unitPrice).toFixed(2)}</span>
+                    </div>
+                  </div>
+
+                  {/* Actions Footer */}
+                  <div className="flex items-center gap-2 mt-2 pt-3 border-t border-gray-200/50">
+                    <button 
+                      onClick={() => setProductToView(prod)}
+                      className="flex-1 flex justify-center p-2.5 bg-gray-100 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-200 active:bg-gray-300 transition-colors" 
+                    >
+                      <Eye size={18} />
+                    </button>
+                    {prod.status === "ACTIVO" ? (
+                      <>
+                        {realName === "Productos Terminados" && (
+                          <button 
+                            onClick={() => openRecipeModal(prod)}
+                            className="flex-1 flex justify-center p-2.5 bg-purple-100 border border-purple-200 rounded-lg text-purple-700 hover:bg-purple-200 active:bg-purple-300 transition-colors" 
+                          >
+                            <ClipboardList size={18} />
+                          </button>
+                        )}
+                        <button 
+                          onClick={() => openEditModal(prod)}
+                          className="flex-1 flex justify-center p-2.5 bg-blue-100 border border-blue-200 rounded-lg text-blue-700 hover:bg-blue-200 active:bg-blue-300 transition-colors" 
+                        >
+                          <Pencil size={18} />
+                        </button>
+                        <button 
+                          onClick={() => setProductToDelete(prod)}
+                          className="flex-1 flex justify-center p-2.5 bg-red-100 border border-red-200 rounded-lg text-red-700 hover:bg-red-200 active:bg-red-300 transition-colors" 
+                        >
+                          <Trash size={18} />
+                        </button>
+                      </>
+                    ) : (
+                      <button 
+                        onClick={() => handleReactivateProduct(prod.id)}
+                        className="flex-[3] flex justify-center items-center gap-2 p-2.5 bg-green-100 border border-green-200 rounded-lg text-green-700 hover:bg-green-200 transition-colors" 
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                        <span className="font-bold text-sm">Reactivar</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
         
         {/* Controles de Paginación */}

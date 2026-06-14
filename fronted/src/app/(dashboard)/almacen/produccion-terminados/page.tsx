@@ -284,7 +284,7 @@ export default function ProduccionTerminadosPage() {
         </div>
         
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
+          <table className="w-full text-left text-sm min-w-[1000px]">
             <thead className="bg-gray-50/80 text-gray-500 border-b border-gray-100">
               <tr>
                 <th className="px-6 py-4 font-semibold w-32">Código</th>

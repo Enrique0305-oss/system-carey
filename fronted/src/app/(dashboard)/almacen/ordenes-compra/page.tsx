@@ -327,11 +327,11 @@ export default function OrdenesCompraPage() {
 
   return (
     <div className="max-w-7xl mx-auto p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-[#1F2937]">Órdenes de Compra</h1>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+        <h1 className="text-2xl md:text-3xl font-bold text-[#1F2937]">Órdenes de Compra</h1>
         <button 
           onClick={() => setIsModalOpen(true)}
-          className="bg-[#1F2937] hover:bg-gray-800 text-white px-4 py-2 rounded-lg font-medium flex items-center transition-colors shadow-sm"
+          className="w-full md:w-auto justify-center bg-[#1F2937] hover:bg-gray-800 text-white px-4 py-3 md:py-2 rounded-xl md:rounded-lg font-medium flex items-center transition-colors shadow-sm"
         >
           <Plus size={18} className="mr-2" /> Nueva Orden
         </button>
@@ -371,39 +371,43 @@ export default function OrdenesCompraPage() {
       </div>
 
       {/* Filtros */}
-      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-6 flex flex-wrap gap-4 items-center justify-between">
-        <div className="relative flex-1 min-w-[300px]">
+      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-6 flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+        <div className="relative w-full md:flex-1 md:min-w-[300px]">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
           <input 
             type="text" 
             placeholder="Buscar por N° Orden o Proveedor..." 
-            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 transition-all"
+            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 transition-all text-sm"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <div className="flex flex-wrap gap-3 items-center">
-          <div className="flex gap-2 items-center">
-            <span className="text-sm text-gray-500 font-medium">Desde:</span>
-            <input 
-              type="date" 
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <span className="text-sm text-gray-500 font-medium">Hasta:</span>
-            <input 
-              type="date" 
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+        <div className="flex flex-col sm:flex-row w-full md:w-auto gap-3 items-start sm:items-center">
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <span className="text-sm text-gray-500 font-medium shrink-0 w-12 sm:w-auto">Desde:</span>
+              <input 
+                type="date" 
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="flex-1 sm:flex-none border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <span className="text-sm text-gray-500 font-medium shrink-0 w-12 sm:w-auto">Hasta:</span>
+              <input 
+                type="date" 
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="flex-1 sm:flex-none border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
           </div>
-          <div className="relative w-48">
+          <div className="relative w-full sm:w-48">
             <select 
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full appearance-none pl-4 pr-10 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700 bg-white"
+              className="w-full appearance-none pl-4 pr-10 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700 bg-white text-sm"
             >
               <option>Todos los estados</option>
               <option>Pendiente</option>
@@ -419,7 +423,7 @@ export default function OrdenesCompraPage() {
                 setEndDate('');
                 setStatusFilter('Todos los estados');
               }}
-              className="text-sm text-gray-500 hover:text-gray-700 underline"
+              className="text-sm text-gray-500 hover:text-gray-700 underline w-full sm:w-auto text-center"
             >
               Limpiar
             </button>
@@ -427,10 +431,11 @@ export default function OrdenesCompraPage() {
         </div>
       </div>
 
-      {/* Tabla */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left">
+      {/* Tabla y Tarjetas */}
+      <div className="bg-transparent lg:bg-white lg:rounded-xl lg:shadow-sm lg:border lg:border-gray-100 overflow-hidden">
+        {/* Vista de Tabla (Desktop/Tablet) */}
+        <div className="hidden lg:block overflow-x-auto w-full">
+          <table className="w-full text-sm text-left min-w-[800px]">
             <thead className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider">
               <tr>
                 <th className="px-6 py-4 font-medium">N° Orden</th>
@@ -481,6 +486,47 @@ export default function OrdenesCompraPage() {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Vista de Tarjetas (Móvil) */}
+        <div className="lg:hidden flex flex-col gap-4 mt-2">
+          {loading ? (
+            <div className="py-8 text-center text-gray-500">Cargando órdenes...</div>
+          ) : paginatedOrders.length === 0 ? (
+            <div className="py-8 text-center text-gray-500 bg-white rounded-xl border border-dashed border-gray-200">No se encontraron órdenes de compra.</div>
+          ) : (
+            paginatedOrders.map((order: any) => (
+              <div key={order.id} className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm flex flex-col gap-3">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="font-bold text-gray-900 text-lg">{order.orderNumber}</h3>
+                    <p className="text-sm text-gray-500 mt-1">{new Date(order.issueDate).toLocaleDateString('es-PE')}</p>
+                  </div>
+                  <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${getStatusColor(order.status)}`}>
+                    {getStatusText(order.status)}
+                  </span>
+                </div>
+                
+                <div className="bg-gray-50 p-3 rounded-lg border border-gray-100 mt-1">
+                  <span className="text-[10px] text-gray-500 uppercase font-semibold">Proveedor</span>
+                  <p className="font-medium text-gray-900 mt-0.5">{order.provider.razonSocial}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">RUC: {order.provider.ruc}</p>
+                </div>
+
+                <div className="flex justify-between items-center bg-blue-50/50 p-3 rounded-lg border border-blue-100">
+                  <span className="text-[11px] text-gray-600 uppercase font-semibold">Total a Pagar</span>
+                  <span className="font-bold text-blue-700 text-lg">S/ {Number(order.total).toFixed(2)}</span>
+                </div>
+
+                <div className="pt-2 border-t border-gray-100">
+                  <button onClick={() => setSelectedOrder(order)} className="w-full flex justify-center items-center gap-2 p-3 bg-blue-50 text-blue-700 font-bold hover:bg-blue-100 rounded-lg transition-colors">
+                    <Eye size={18} />
+                    Ver Detalle para Aprobar
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
         </div>
 
         {/* Controles de Paginación */}

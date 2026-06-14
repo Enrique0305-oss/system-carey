@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, Package, Truck, LogOut, Pin, PinOff, ChevronDown, ChevronRight, Box, User, Search, Settings, Users } from "lucide-react";
+import { LayoutDashboard, Package, Truck, LogOut, Pin, PinOff, ChevronDown, ChevronRight, Box, User, Search, Settings, Users, X } from "lucide-react";
 
 export function Sidebar() {
   const [isPinned, setIsPinned] = useState(true);
@@ -14,6 +14,7 @@ export function Sidebar() {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [userArea, setUserArea] = useState<string | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
 
@@ -23,9 +24,19 @@ export function Sidebar() {
       setUserArea(Cookies.default.get('user_area') || null);
       setUserName(Cookies.default.get('user_name') || null);
     });
+    
+    // Escuchar evento para abrir sidebar en móvil
+    const handleToggle = () => setIsMobileOpen(prev => !prev);
+    window.addEventListener('toggle-mobile-sidebar', handleToggle);
+    return () => window.removeEventListener('toggle-mobile-sidebar', handleToggle);
   }, []);
 
-  const isExpanded = isPinned || isHovered;
+  // Cerrar sidebar móvil cuando se cambia de ruta
+  useEffect(() => {
+    setIsMobileOpen(false);
+  }, [pathname]);
+
+  const isExpanded = isPinned || isHovered || isMobileOpen;
 
   // Función para determinar si el enlace está activo
   const isActive = (path: string) => {
@@ -71,41 +82,61 @@ export function Sidebar() {
   ];
 
   return (
-    <aside 
-      className={`bg-[#1F2937] text-gray-300 flex flex-col h-screen shrink-0 transition-all duration-300 ease-in-out relative ${isExpanded ? 'w-64' : 'w-20'}`}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      <div className="p-4 h-16 flex items-center justify-between bg-[#111827] overflow-hidden whitespace-nowrap">
-        <div className="flex items-center justify-center w-full">
-          {isExpanded ? (
-            <div className="flex items-center gap-3">
+    <>
+      {/* Fondo oscuro para móvil cuando está abierto */}
+      {isMobileOpen && (
+        <div 
+          className="fixed inset-0 bg-black/60 z-40 lg:hidden backdrop-blur-sm"
+          onClick={() => setIsMobileOpen(false)}
+        />
+      )}
+
+      <aside 
+        className={`bg-[#1F2937] text-gray-300 flex flex-col h-screen shrink-0 transition-all duration-300 ease-in-out fixed lg:relative z-50 
+          ${isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+          ${isExpanded ? 'w-64' : 'w-20'}
+        `}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        <div className="p-4 h-16 flex items-center justify-between bg-[#111827] overflow-hidden whitespace-nowrap">
+          <div className="flex items-center justify-center w-full relative">
+            {isExpanded ? (
+              <div className="flex items-center gap-3">
+                <img 
+                  src="/images/logo.png" 
+                  alt="Carey Logo" 
+                  className="h-10 w-10 object-cover rounded-lg shadow-sm"
+                />
+                <h1 className="text-2xl font-bold tracking-wider text-white">CAREY</h1>
+              </div>
+            ) : (
               <img 
                 src="/images/logo.png" 
                 alt="Carey Logo" 
-                className="h-10 w-10 object-cover rounded-lg shadow-sm"
+                className="h-8 w-8 object-cover rounded-lg shadow-sm transition-all duration-300"
               />
-              <h1 className="text-2xl font-bold tracking-wider text-white">CAREY</h1>
-            </div>
-          ) : (
-            <img 
-              src="/images/logo.png" 
-              alt="Carey Logo" 
-              className="h-8 w-8 object-cover rounded-lg shadow-sm transition-all duration-300"
-            />
+            )}
+          </div>
+          
+          {/* Botón cerrar para móvil */}
+          <button 
+            onClick={() => setIsMobileOpen(false)} 
+            className="lg:hidden text-gray-400 hover:text-white absolute right-4 p-1"
+          >
+            <X size={24} />
+          </button>
+
+          {isExpanded && (
+            <button 
+              onClick={() => setIsPinned(!isPinned)} 
+              className="hidden lg:block text-gray-400 hover:text-white transition-colors absolute right-4"
+              title={isPinned ? "Desfijar menú" : "Fijar menú"}
+            >
+              {isPinned ? <Pin size={18} className="fill-current" /> : <PinOff size={18} />}
+            </button>
           )}
         </div>
-        
-        {isExpanded && (
-          <button 
-            onClick={() => setIsPinned(!isPinned)} 
-            className="text-gray-400 hover:text-white transition-colors absolute right-4"
-            title={isPinned ? "Desfijar menú" : "Fijar menú"}
-          >
-            {isPinned ? <Pin size={18} className="fill-current" /> : <PinOff size={18} />}
-          </button>
-        )}
-      </div>
       
       {/* --- BOTONES DEL MENÚ --- */}
       <nav className="flex-1 overflow-y-auto p-4 space-y-2 relative">
@@ -264,9 +295,11 @@ export function Sidebar() {
         </button>
       </div>
 
+    </aside>
+
       {/* --- MODAL CONFIRMAR CERRAR SESIÓN --- */}
       {showLogoutModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200 p-4">
           <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 w-full max-w-sm m-4 animate-in zoom-in-95 duration-200">
             <h3 className="text-lg font-bold text-gray-900 mb-2">Cerrar Sesión</h3>
             <p className="text-gray-500 mb-6">¿Estás seguro que deseas salir del sistema? Tendrás que volver a ingresar tus credenciales.</p>
@@ -294,6 +327,6 @@ export function Sidebar() {
           </div>
         </div>
       )}
-    </aside>
+    </>
   );
 }

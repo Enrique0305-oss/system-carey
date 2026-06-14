@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Menu } from "lucide-react";
 
 export function TopBar() {
   const [userName, setUserName] = useState<string>("Cargando...");
@@ -25,8 +26,14 @@ export function TopBar() {
   }, []);
 
   return (
-    <header className="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-8 shrink-0">
-      <div className="flex-1">
+    <header className="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-4 md:px-8 shrink-0">
+      <div className="flex-1 flex items-center">
+        <button 
+          onClick={() => window.dispatchEvent(new Event('toggle-mobile-sidebar'))}
+          className="lg:hidden mr-3 p-2 -ml-2 text-gray-600 hover:bg-gray-100 hover:text-carey-red rounded-lg transition-colors"
+        >
+          <Menu size={24} />
+        </button>
         {/* Espacio para Breadcrumbs o Buscador */}
       </div>
       <div className="flex items-center gap-4">

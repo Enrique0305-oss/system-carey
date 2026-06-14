@@ -256,7 +256,7 @@ export default function AjustesPage() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left">
+          <table className="w-full text-sm text-left min-w-[1000px]">
             <thead className="text-[#3b4b6b] font-bold text-[10px] uppercase bg-gray-50 border-b-2 border-gray-100">
               <tr>
                 <th className="px-6 py-4">N° Ajuste</th>
