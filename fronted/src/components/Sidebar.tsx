@@ -249,7 +249,7 @@ export function Sidebar() {
         {(userArea === 'Gerencia' || userArea === 'Administrador') && (
           <div>
             <button 
-              onClick={() => { setIsAjustesOpen(!isAjustesOpen); if(!isExpanded) setIsExpanded(true); }}
+              onClick={() => { setIsAjustesOpen(!isAjustesOpen); if(!isExpanded) setIsPinned(true); }}
               className={`w-full flex items-center px-4 py-3 rounded-xl transition-all duration-300
                 ${pathname.startsWith('/ajustes') ? 'bg-carey-red text-white shadow-md shadow-red-200' : 'hover:bg-[#1F2937] text-gray-400 hover:text-white'}
               `}

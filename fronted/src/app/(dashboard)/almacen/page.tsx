@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { AlertTriangle, ArrowRight, Package, TrendingDown, TrendingUp } from "lucide-react";
 import Link from "next/link";
-import { createChart } from "lightweight-charts";
+import { createChart, ColorType } from "lightweight-charts";
 import { Bar } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -52,7 +52,7 @@ export default function AlmacenDashboard() {
     // --- Lightweight Charts ---
     const chart = createChart(chartContainerRef.current, {
       layout: {
-        background: { type: 'solid', color: 'transparent' },
+        background: { type: ColorType.Solid, color: 'transparent' },
         textColor: '#6B7280',
       },
       grid: {

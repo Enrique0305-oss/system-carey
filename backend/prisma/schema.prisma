@@ -34,6 +34,8 @@ model Warehouse {
   products  Product[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+
+  @@map("warehouse")
 }
 
 model Product {
@@ -68,6 +70,7 @@ model Product {
 
   @@index([warehouseId])
   @@index([status])
+  @@map("product")
 }
 
 model Lot {
@@ -100,6 +103,7 @@ model Lot {
 
   @@index([productId])
   @@unique([productId, lotCode])
+  @@map("lot")
 }
 
 model Movement {
@@ -121,6 +125,7 @@ model Movement {
   @@index([productId])
   @@index([lotId])
   @@index([date])
+  @@map("movement")
 }
 
 model Area {
@@ -129,6 +134,8 @@ model Area {
   users     User[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+
+  @@map("area")
 }
 
 model User {
@@ -147,6 +154,7 @@ model User {
   purchaseOrders PurchaseOrder[]
 
   @@index([areaId])
+  @@map("user")
 }
 
 model Provider {
@@ -172,6 +180,8 @@ model Provider {
 
   purchaseOrders  PurchaseOrder[]
   lots            Lot[]
+
+  @@map("provider")
 }
 
 model PurchaseOrder {
@@ -207,6 +217,7 @@ model PurchaseOrder {
 
   @@index([providerId])
   @@index([userId])
+  @@map("purchaseorder")
 }
 
 model PurchaseOrderItem {
@@ -227,6 +238,7 @@ model PurchaseOrderItem {
   @@index([purchaseOrderId])
   @@index([productId])
   @@index([lotId])
+  @@map("purchaseorderitem")
 }
 
 model InventoryAdjustment {
@@ -246,6 +258,7 @@ model InventoryAdjustment {
 
   @@index([productId])
   @@index([lotId])
+  @@map("inventoryadjustment")
 }
 
 model InternalProduction {
@@ -260,6 +273,8 @@ model InternalProduction {
   
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
+
+  @@map("internalproduction")
 }
 
 model InternalProductionInput {
@@ -277,6 +292,7 @@ model InternalProductionInput {
   @@index([internalProductionId])
   @@index([productId])
   @@index([lotId])
+  @@map("internalproductioninput")
 }
 
 model InternalProductionOutput {
@@ -294,6 +310,7 @@ model InternalProductionOutput {
   @@index([internalProductionId])
   @@index([productId])
   @@index([lotId])
+  @@map("internalproductionoutput")
 }
 
 model ProductRecipe {
@@ -305,6 +322,8 @@ model ProductRecipe {
   
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+
+  @@map("productrecipe")
 }
 
 model ProductRecipeItem {
@@ -318,6 +337,7 @@ model ProductRecipeItem {
   quantity        Decimal  @db.Decimal(10, 4) // Cantidad requerida para hacer 1 unidad del producto final
   
   @@unique([recipeId, inputId])
+  @@map("productrecipeitem")
 }
 
 model Client {
@@ -333,6 +353,8 @@ model Client {
   updatedAt       DateTime  @updatedAt
 
   dispatches      Dispatch[]
+
+  @@map("client")
 }
 
 model Dispatch {
@@ -350,6 +372,7 @@ model Dispatch {
   updatedAt        DateTime @updatedAt
   
   @@index([clientId])
+  @@map("dispatch")
 }
 
 model DispatchItem {
@@ -367,6 +390,7 @@ model DispatchItem {
   @@index([dispatchId])
   @@index([productId])
   @@index([lotId])
+  @@map("dispatchitem")
 }
 
 model InternalConsumption {
@@ -381,6 +405,8 @@ model InternalConsumption {
   
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
+
+  @@map("internalconsumption")
 }
 
 model InternalConsumptionItem {
@@ -398,4 +424,5 @@ model InternalConsumptionItem {
   @@index([internalConsumptionId])
   @@index([productId])
   @@index([lotId])
+  @@map("internalconsumptionitem")
 }

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { TrendingUp, TrendingDown, DollarSign, Package, Truck, ArrowUpRight, ArrowDownRight } from "lucide-react";
-import { createChart } from "lightweight-charts";
+import { createChart, ColorType } from "lightweight-charts";
 import { Bar, Doughnut } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -42,7 +42,7 @@ export default function DashboardGerencia() {
     // --- Lightweight Charts ---
     const chart = createChart(chartContainerRef.current, {
       layout: {
-        background: { type: 'solid', color: 'transparent' },
+        background: { type: ColorType.Solid, color: 'transparent' },
         textColor: '#6B7280',
       },
       grid: {

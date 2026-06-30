@@ -104,7 +104,7 @@ export default function ProduccionPage() {
         setIsModalOpen(false);
         setInputs([]);
         setOutputs([]);
-        setCurrentInput({ productId: "", lotId: "", quantity: "" });
+        setCurrentInput({ warehouseId: "", productId: "", lotId: "", quantity: "" });
         setCurrentOutput({ productId: "", quantity: "", expirationDate: "" });
         fetchData();
         showSuccessToast("Producción registrada con éxito");
